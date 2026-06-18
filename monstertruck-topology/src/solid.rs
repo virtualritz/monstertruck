@@ -130,6 +130,24 @@ impl<P, C, S> Solid<P, C, S> {
             })
     }
 
+    /// Assigns a fresh [`StableId`] to every face that does not have one yet,
+    /// leaving already-assigned faces untouched.
+    ///
+    /// Faces of a freshly built solid are [`StableId::UNASSIGNED`] until ids
+    /// are explicitly assigned, so per-face attributes (e.g. a colour) cannot
+    /// be keyed on them. Calling this first gives every face a stable id to key
+    /// attributes on.
+    pub fn ensure_face_stable_ids(&mut self) {
+        let id_allocator = &mut self.id_allocator;
+        for shell in &mut self.boundaries {
+            for face in shell.face_iter_mut() {
+                if !face.stable_id().is_assigned() {
+                    face.set_stable_id(id_allocator.allocate());
+                }
+            }
+        }
+    }
+
     /// Returns a new solid whose surfaces are mapped by `surface_mapping`,
     /// curves are mapped by `curve_mapping` and points are mapped by `point_mapping`.
     /// # Remarks
@@ -361,3 +379,25 @@ pub(super) fn cube() -> Solid<(), (), ()> {
 
 #[test]
 fn cube_test() { cube(); }
+
+#[test]
+fn ensure_face_stable_ids_assigns_unassigned_faces() {
+    use monstertruck_core::StableId;
+    let mut solid = cube();
+    // A freshly built cube has unassigned face ids.
+    assert!(solid.face_iter().all(|f| !f.stable_id().is_assigned()));
+
+    solid.ensure_face_stable_ids();
+    let ids: Vec<StableId> = solid.face_iter().map(|f| f.stable_id()).collect();
+    assert_eq!(ids.len(), 6);
+    assert!(ids.iter().all(|id| id.is_assigned()), "all faces assigned");
+    let mut unique = ids.clone();
+    unique.sort();
+    unique.dedup();
+    assert_eq!(unique.len(), 6, "face ids are unique");
+
+    // Idempotent: a second call leaves already-assigned faces untouched.
+    solid.ensure_face_stable_ids();
+    let ids_again: Vec<StableId> = solid.face_iter().map(|f| f.stable_id()).collect();
+    assert_eq!(ids, ids_again, "second call is a no-op for assigned faces");
+}
