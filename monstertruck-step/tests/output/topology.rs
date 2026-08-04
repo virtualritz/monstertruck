@@ -17,7 +17,7 @@ fn parse_solid() {
         let solid: CompressedSolid = serde_json::from_reader(json.as_slice()).unwrap();
         let step_string =
             CompleteStepDisplay::new(StepModel::from(&solid), Default::default()).to_string();
-        ruststep::parser::parse(&step_string).unwrap_or_else(|e| {
+        step_p21::parser::parse(&step_string).unwrap_or_else(|e| {
             panic!(
                 "failed to parse step from {json_file}\n[Error Message]\n{e}[STEP file]\n{step_string}"
             )
@@ -33,7 +33,7 @@ fn parse_shell() {
         let shell = solid.boundaries.pop().unwrap();
         let step_string =
             CompleteStepDisplay::new(StepModel::from(&shell), Default::default()).to_string();
-        ruststep::parser::parse(&step_string).unwrap_or_else(|e| {
+        step_p21::parser::parse(&step_string).unwrap_or_else(|e| {
             panic!(
                 "failed to parse step from {json_file}\n[Error Message]\n{e}[STEP file]\n{step_string}"
             )
@@ -52,7 +52,7 @@ fn parse_solids() {
         .collect();
     let step_string =
         CompleteStepDisplay::new(StepModels::from_iter(&solids), Default::default()).to_string();
-    ruststep::parser::parse(&step_string).unwrap_or_else(|e| {
+    step_p21::parser::parse(&step_string).unwrap_or_else(|e| {
         panic!("failed to parse step\n[Error Message]\n{e}[STEP file]\n{step_string}")
     });
 }

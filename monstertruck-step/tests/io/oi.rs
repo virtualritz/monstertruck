@@ -1,14 +1,14 @@
 use monstertruck_geometry::prelude as truck;
 use monstertruck_mesh::PolylineCurve;
 use monstertruck_step::{load::*, save::*};
-use ruststep::{
-    ast::DataSection,
-    tables::{EntityTable, Holder},
-};
 use std::{
     f64::consts::PI,
     fmt::{Debug, Display},
     str::FromStr,
+};
+use step_p21::{
+    ast::DataSection,
+    tables::{EntityTable, Holder},
 };
 use truck::*;
 

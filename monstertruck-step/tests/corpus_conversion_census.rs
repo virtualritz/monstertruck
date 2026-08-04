@@ -30,15 +30,15 @@
 //! ```
 
 use monstertruck_step::load::{SurfaceAny, Table, step_geometry::Surface};
-use ruststep::{
-    ast::{DataSection, EntityInstance, Name, SubSuperRecord},
-    tables::{IntoOwned, PlaceHolder},
-};
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use step_p21::{
+    ast::{DataSection, EntityInstance, Name, SubSuperRecord},
+    tables::{IntoOwned, PlaceHolder},
+};
 
 // ------------------------------------------------------- panic containment
 //
@@ -399,7 +399,7 @@ fn table_with_refusals(bytes: &[u8]) -> Result<(Table, Refusals), String> {
         Ok(text) => text.to_owned(),
         Err(_) => bytes.iter().map(|&b| b as char).collect(),
     };
-    let exchange = ruststep::parser::parse(&text).map_err(|e| e.to_string())?;
+    let exchange = step_p21::parser::parse(&text).map_err(|e| e.to_string())?;
     let section = exchange.data.first().ok_or("no DATA section")?;
     let mut table = Table::default();
     let mut refusals = Refusals::new();

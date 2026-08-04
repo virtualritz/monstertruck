@@ -37,14 +37,14 @@
 /// ```
 /// # fn main() -> anyhow::Result<()> {
 /// use monstertruck_step::load::{*, step_geometry::*};
-/// use ruststep::tables::EntityTable;
+/// use step_p21::tables::EntityTable;
 /// // read file
 /// let step_string = include_str!(concat!(
 ///     env!("CARGO_MANIFEST_DIR"),
 ///     "/../resources/step/occt-cube.step",
 /// ));
 /// // parse step file
-/// let exchange = ruststep::parser::parse(&step_string)?;
+/// let exchange = step_p21::parser::parse(&step_string)?;
 /// // convert the parsing results to a Rust struct
 /// let table = Table::from_data_section(&exchange.data[0]);
 /// // get `CartesianPoint` registered in #102

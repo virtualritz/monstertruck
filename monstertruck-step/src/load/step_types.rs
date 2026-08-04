@@ -1,8 +1,8 @@
 use monstertruck_geometry::prelude as geom;
-use ruststep::{Holder, ast::Name, primitive::Logical, tables::PlaceHolder};
 use serde::{Deserialize, Serialize};
 use std::f64::consts::PI;
 use std::result::Result;
+use step_p21::{Holder, ast::Name, primitive::Logical, tables::PlaceHolder};
 
 use super::Table;
 use super::step_geometry::{self, *};
@@ -959,10 +959,10 @@ impl SurfaceCurveParams {
 
 #[test]
 fn deserialize_pscr() {
-    let (_, p) = ruststep::parser::exchange::parameter(".PCURVE_S1.").unwrap();
+    let (_, p) = step_p21::parser::exchange::parameter(".PCURVE_S1.").unwrap();
     let x = PreferredSurfaceCurveRepresentation::deserialize(&p).unwrap();
     assert!(matches!(x, PreferredSurfaceCurveRepresentation::PcurveS1));
-    let (_, p) = ruststep::parser::exchange::parameter(".PCURVE_S2.").unwrap();
+    let (_, p) = step_p21::parser::exchange::parameter(".PCURVE_S2.").unwrap();
     let x = PreferredSurfaceCurveRepresentation::deserialize(&p).unwrap();
     assert!(matches!(x, PreferredSurfaceCurveRepresentation::PcurveS2));
 }

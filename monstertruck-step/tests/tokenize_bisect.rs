@@ -89,12 +89,12 @@ fn bisect_ai14r() { bisect("Ai-14R", "Ai-14R.stp") }
 /// ISO 10303-21 escapes a literal `'` inside a string by doubling it. Imperial
 /// CAD is full of them -- inch marks in thread callouts and part names.
 ///
-/// Published ruststep 0.4.0 refuses the escape. UN-IGNORED: this test IS the
+/// Published step_p21 0.4.0 refuses the escape. UN-IGNORED: this test IS the
 /// acceptance test for the upstream fix, which landed in
-/// <https://github.com/ricosjp/ruststep/pull/254> (originally
-/// <https://github.com/ricosjp/ruststep/pull/251>) and reaches us through the
+/// <https://github.com/ricosjp/step_p21/pull/254> (originally
+/// <https://github.com/ricosjp/step_p21/pull/251>) and reaches us through the
 /// `[patch.crates-io]` rev pin in the workspace manifest. It goes red again if
-/// that pin is dropped before ruststep publishes a release containing the fix.
+/// that pin is dropped before step_p21 publishes a release containing the fix.
 #[test]
 fn escaped_apostrophe_in_a_string_literal() {
     let base = |name: &str| {
@@ -148,10 +148,10 @@ fn minimal(entity: &str) -> String {
 /// not the window, the entity type, or the harness. In particular the non-empty
 /// aggregate differs by exactly one element.
 ///
-/// Published ruststep 0.4.0 refuses `()`. UN-IGNORED: this test IS the
+/// Published step_p21 0.4.0 refuses `()`. UN-IGNORED: this test IS the
 /// acceptance test for the upstream fix, which landed in
-/// <https://github.com/ricosjp/ruststep/pull/254> (originally
-/// <https://github.com/ricosjp/ruststep/pull/251>) and reaches us through the
+/// <https://github.com/ricosjp/step_p21/pull/254> (originally
+/// <https://github.com/ricosjp/step_p21/pull/251>) and reaches us through the
 /// `[patch.crates-io]` rev pin in the workspace manifest.
 #[test]
 fn empty_aggregate_in_an_entity_parameter() {

@@ -1,9 +1,9 @@
 use monstertruck_geometry::prelude::*;
 use monstertruck_modeling::{Curve as ModelingCurve, Surface as ModelingSurface};
-use monstertruck_step::load::{CylindricalSurfaceHolder, Table, ruststep, step_geometry};
+use monstertruck_step::load::{CylindricalSurfaceHolder, Table, step_geometry, step_p21};
 use monstertruck_step::save::*;
-use ruststep::tables::EntityTable;
 use std::f64::consts::TAU;
+use step_p21::tables::EntityTable;
 
 /// Builds a modeling-layer right circular cylinder as a surface of revolution
 /// of a straight profile line parallel to the revolution axis.

@@ -73,14 +73,14 @@ use monstertruck_step::load::{
         },
     },
 };
-use ruststep::{
-    ast::Name,
-    tables::{EntityTable, IntoOwned, PlaceHolder},
-};
 use std::cell::{Cell, RefCell};
 use std::collections::{BTreeMap, HashMap};
 use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
+use step_p21::{
+    ast::Name,
+    tables::{EntityTable, IntoOwned, PlaceHolder},
+};
 
 // ------------------------------------------------------- panic containment
 //

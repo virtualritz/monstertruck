@@ -1,10 +1,10 @@
 use monstertruck_step::load::*;
-use ruststep::{
+use std::{collections::HashMap, str::FromStr};
+use step_p21::{
     ast::{DataSection, Name},
     primitive::Logical,
     tables::PlaceHolder,
 };
-use std::{collections::HashMap, str::FromStr};
 
 #[test]
 fn read() {

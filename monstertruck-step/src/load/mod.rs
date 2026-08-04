@@ -1,16 +1,16 @@
 #![allow(missing_docs, unused_qualifications)]
 
-/// re-export [`ruststep`](https://docs.rs/ruststep/latest/ruststep/)
-pub use ruststep;
+/// re-export [`step_p21`](https://docs.rs/step_p21/latest/step_p21/)
+pub use step_p21;
 
 use monstertruck_assembly::assy::*;
-use ruststep::{
-    ast::{DataSection, EntityInstance, Name, Parameter, SubSuperRecord},
-    tables::{EntityTable, IntoOwned, PlaceHolder},
-};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::result::Result;
+use step_p21::{
+    ast::{DataSection, EntityInstance, Name, Parameter, SubSuperRecord},
+    tables::{EntityTable, IntoOwned, PlaceHolder},
+};
 
 pub mod convert;
 /// Typed accounting for what a load kept and what it lost.
@@ -27,7 +27,7 @@ use step_geometry::StepConvertingError;
 
 /// Public error type returned by STEP loading entry points.
 ///
-/// Wraps both [`ruststep`] parser failures and the boxed [`StepConvertingError`]
+/// Wraps both [`step_p21`] parser failures and the boxed [`StepConvertingError`]
 /// produced internally by per-entity `TryFrom` impls. `LoadError` is [`Sized`]
 /// and implements [`std::error::Error`] + `Send` + `Sync` + `'static`, so it
 /// composes with `?` from any caller whose result type already accepts a
@@ -36,7 +36,7 @@ use step_geometry::StepConvertingError;
 pub enum LoadError {
     /// The input could not be parsed as a STEP exchange structure.
     #[error("STEP parser error: {0}")]
-    Parse(#[from] ruststep::error::Error),
+    Parse(#[from] step_p21::error::Error),
     /// A per-entity conversion from STEP types into `monstertruck` types failed.
     #[error("STEP conversion error: {0}")]
     Conversion(String),
@@ -178,7 +178,7 @@ impl Table {
     pub fn record_refused_instance(
         &mut self,
         instance: &EntityInstance,
-        error: &ruststep::error::Error,
+        error: &step_p21::error::Error,
     ) {
         let (id, name) = match instance {
             EntityInstance::Simple { id, record } => (*id, record.name.clone()),
@@ -222,7 +222,7 @@ impl Table {
         );
     }
 
-    pub fn push_instance(&mut self, instance: &EntityInstance) -> ruststep::error::Result<()> {
+    pub fn push_instance(&mut self, instance: &EntityInstance) -> step_p21::error::Result<()> {
         match instance {
             EntityInstance::Simple { id, record } => match record.name.as_str() {
                 "CARTESIAN_POINT" => {
@@ -982,7 +982,7 @@ impl Table {
     /// STEP exchange structure.
     #[inline(always)]
     pub fn from_step(step_str: &str) -> Result<Table, LoadError> {
-        let exchange = ruststep::parser::parse(step_str)?;
+        let exchange = step_p21::parser::parse(step_str)?;
         Ok(Table::from_data_section(&exchange.data[0]))
     }
 

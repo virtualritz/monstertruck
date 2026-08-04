@@ -37,7 +37,6 @@ console_error_panic_hook = "0.1"
 console_log = "1"
 derive_more = { version = "2", features = ["full"] }
 env_logger = "0.11"
-espr-derive = "0.4"
 futures-intrusive = "0.5"
 getrandom = { version = "0.4", features = ["wasm_js"] }
 gloo = "0.12"
@@ -60,7 +59,7 @@ rkyv = { version = "0.8", features = ["alloc"] }
 rclite = "0.4"
 rustc-hash = "2"
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
-ruststep = "0.4"
+step-p21 = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 smallvec = "1"
@@ -93,35 +92,6 @@ monstertruck-step = { version = "0.3.3", path = "monstertruck-step" }
 monstertruck-topology = { version = "0.3.3", path = "monstertruck-topology" }
 monstertruck-traits = { version = "0.3.3", path = "monstertruck-traits" }
 
-
-# Two ISO 10303-21 tokenizer defects block whole public STEP assemblies on the
-# published ruststep 0.4.0:
-#
-#   * a string literal may escape a literal apostrophe by DOUBLING it (`''`),
-#     which imperial CAD emits constantly as inch marks in thread callouts --
-#     the sole reason UMC-500_SS_Solid_Model_2019-06_r1.stp (59 MB) is unreadable;
-#   * an aggregate may be EMPTY (`()`), e.g. `ADVANCED_FACE('',(),#57075,.T.)` --
-#     the sole reason Ai-14R.stp (99 MB AP203) is unreadable.
-#
-# BOTH are already fixed on ruststep master and are merely UNRELEASED: crates.io
-# 0.4.0 is three commits behind. The fixes are
-#   https://github.com/ricosjp/ruststep/pull/251 (author's original)
-#   https://github.com/ricosjp/ruststep/pull/254 (merged 2025-03-19, in master)
-# so there is nothing for us to upstream -- this pin exists ONLY because no
-# release carries them yet. It comes off the moment ruststep publishes any
-# version above 0.4.0; then this whole section is deleted and the workspace
-# `ruststep = "0.4"` requirement is bumped to that release.
-#
-# Pinned by exact rev (the PR #254 merge commit) rather than by branch, so the
-# build stays reproducible. Only `ruststep` needs patching: `ruststep-derive`
-# has no other dependent, so it follows from the git checkout's path dep.
-# A mirror of this rev is parked at virtualritz/ruststep#monstertruck-pin in
-# case upstream ever rewrites master.
-#
-# Acceptance: the two formerly-`#[ignore]`d tests in
-# monstertruck-step/tests/tokenize_bisect.rs, plus the corpus census.
-[patch.crates-io]
-ruststep = { git = "https://github.com/ricosjp/ruststep", rev = "cd89e5a7cd9a6baadcb456392a5888f4cbc6b707" }
 
 [profile.release.package.monstertruck-wasm]
 opt-level = "z"

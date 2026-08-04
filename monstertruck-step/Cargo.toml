@@ -13,7 +13,7 @@ categories = ["graphics"]
 
 [features]
 default = ["load", "derive"]
-load = ["derive", "derive_more", "ruststep", "serde", "monstertruck-traits"]
+load = ["derive", "derive_more", "step-p21", "serde", "monstertruck-traits"]
 derive = ["monstertruck-derive"]
 
 [dependencies]
@@ -23,7 +23,7 @@ derive = ["monstertruck-derive"]
 web-time = { workspace = true }
 chrono = { workspace = true }
 derive_more = { workspace = true, optional = true }
-ruststep = { workspace = true, optional = true }
+step-p21 = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 thiserror = { workspace = true }
 monstertruck-assembly = { workspace = true }
@@ -37,7 +37,6 @@ monstertruck-topology = { workspace = true }
 [dev-dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true }
-espr-derive = { workspace = true }
 image = { workspace = true }
 itertools = { workspace = true }
 proptest = { workspace = true }

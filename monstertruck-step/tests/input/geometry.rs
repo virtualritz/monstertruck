@@ -6,8 +6,8 @@ use monstertruck_step::{
     save::*,
 };
 use proptest::*;
-use ruststep::{ast::DataSection, tables::*};
 use std::{f64::consts::PI, str::FromStr};
+use step_p21::{ast::DataSection, tables::*};
 
 fn float_to_str(x: f64) -> String {
     if f64::abs(x) < 1.0e-6 {

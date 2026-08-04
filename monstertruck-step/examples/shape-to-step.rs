@@ -40,5 +40,5 @@ fn main() {
     .to_string();
     let mut step_file = std::fs::File::create(output_step_file).unwrap();
     std::io::Write::write_all(&mut step_file, step_string.as_ref()).unwrap();
-    let _ = ruststep::parser::parse(&step_string).unwrap();
+    let _ = step_p21::parser::parse(&step_string).unwrap();
 }

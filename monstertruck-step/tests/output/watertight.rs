@@ -77,7 +77,7 @@ fn edge_uses(step: &str) -> (BTreeSet<u64>, BTreeMap<u64, usize>) {
 /// syntactically valid, every `EDGE_CURVE` is referenced by exactly two
 /// `ORIENTED_EDGE`s, and no `ORIENTED_EDGE` references an undefined edge.
 fn assert_closed_manifold(label: &str, step: &str) -> anyhow::Result<()> {
-    ruststep::parser::parse(step)
+    step_p21::parser::parse(step)
         .map_err(|error| anyhow::anyhow!("{label}: emitted STEP did not parse: {error}"))?;
 
     let (defined, references) = edge_uses(step);

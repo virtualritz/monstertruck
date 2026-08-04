@@ -7,7 +7,7 @@ where for<'a> StepDisplay<&'a T>: std::fmt::Display {
     assert_eq!(&display.to_string(), ans);
     assert_eq!(x.step_length(), length);
     let step = CompleteStepDisplay::new(display, Default::default()).to_string();
-    ruststep::parser::parse(&step).unwrap();
+    step_p21::parser::parse(&step).unwrap();
 }
 
 #[test]
