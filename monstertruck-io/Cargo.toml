@@ -1,0 +1,42 @@
+[package]
+name = "monstertruck-io"
+version = "0.3.3"
+authors = ["Moritz Moeller <virtualritz@protonmail.com>"]
+edition = "2024"
+description = "Import CAD exchange formats into monstertruck's B-rep types"
+homepage = "https://github.com/virtualritz/monstertruck"
+repository = "https://github.com/virtualritz/monstertruck"
+readme = "README.md"
+keywords = ["cad", "iges", "step", "import", "brep"]
+categories = ["graphics", "science", "parser-implementations"]
+license = "Apache-2.0"
+# Held back from crates.io until the cadmpeg conversion is written. Publishing a
+# crate whose only novel entry point returns `Unimplemented` would advertise an
+# importer that cannot import.
+publish = false
+
+# One feature per format. Nothing is on by default: every format drags a decoder
+# and its dependency tree, and a consumer that wants STEP should not compile an
+# IGES reader.
+[features]
+default = []
+# Reading IGES 5.3, via the cadmpeg codec.
+iges = ["cadmpeg-codec-iges", "cadmpeg-codec-core", "cadmpeg-ir"]
+# Reading and writing ISO 10303-21, via monstertruck's own STEP crate.
+step = ["monstertruck-step"]
+
+[dependencies]
+monstertruck-core = { workspace = true }
+monstertruck-geometry = { workspace = true }
+monstertruck-modeling = { workspace = true }
+monstertruck-topology = { workspace = true }
+thiserror = { workspace = true }
+
+monstertruck-step = { workspace = true, optional = true }
+
+# The cadmpeg codecs all decode into ONE intermediate representation, which is
+# why this crate needs a single converter rather than one per format.
+cadmpeg-ir = { version = "0.3", optional = true }
+cadmpeg-codec-iges = { version = "0.3", optional = true }
+# `ReadSeek` is public here rather than in cadmpeg-ir.
+cadmpeg-codec-core = { version = "0.3", optional = true }

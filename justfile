@@ -121,7 +121,7 @@ doc:
 rdme_version := "2.1.0"
 
 # Crates whose README is generated from their crate-level docs by `cargo rdme`.
-rdme_crates := "monstertruck monstertruck-assembly monstertruck-core monstertruck-derive monstertruck-fillet monstertruck-geometry monstertruck-gpu monstertruck-healing monstertruck-mesh monstertruck-meshing monstertruck-modeling monstertruck-render monstertruck-solid monstertruck-step monstertruck-topology monstertruck-traits monstertruck-wasm"
+rdme_crates := "monstertruck monstertruck-assembly monstertruck-core monstertruck-derive monstertruck-fillet monstertruck-geometry monstertruck-gpu monstertruck-healing monstertruck-io monstertruck-mesh monstertruck-meshing monstertruck-modeling monstertruck-render monstertruck-solid monstertruck-step monstertruck-topology monstertruck-traits monstertruck-wasm"
 
 # Regenerate every generated README from its crate-level docs.
 #

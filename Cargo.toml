@@ -9,6 +9,7 @@ members = [
     "monstertruck-fillet",
     "monstertruck-geometry",
     "monstertruck-healing",
+    "monstertruck-io",
     "monstertruck-traits",
     "monstertruck-wasm",
     "monstertruck-meshing",
@@ -82,6 +83,7 @@ monstertruck-derive = { version = "0.3.3", path = "monstertruck-derive" }
 monstertruck-fillet = { version = "0.3.3", path = "monstertruck-fillet" }
 monstertruck-geometry = { version = "0.3.3", path = "monstertruck-geometry" }
 monstertruck-healing = { version = "0.3.3", path = "monstertruck-healing" }
+monstertruck-io = { version = "0.3.3", path = "monstertruck-io" }
 monstertruck-mesh = { version = "0.3.3", path = "monstertruck-mesh" }
 monstertruck-meshing = { version = "0.3.3", path = "monstertruck-meshing" }
 monstertruck-modeling = { version = "0.3.3", path = "monstertruck-modeling" }
