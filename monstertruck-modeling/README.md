@@ -1,10 +1,10 @@
 # `monstertruck-modeling`
 
+<!-- cargo-rdme start -->
+
 Integrated geometric and topological modeling algorithms.
 
-> Forked from [`truck-modeling`](https://crates.io/crates/truck-modeling) v0.6.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use monstertruck_modeling::*;
@@ -17,6 +17,10 @@ let cube: Solid = builder::extrude(&f, Vector3::unit_z());
 
 assert_eq!(cube.boundaries()[0].len(), 6); // six faces
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-modeling`](https://crates.io/crates/truck-modeling) v0.6.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

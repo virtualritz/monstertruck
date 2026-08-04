@@ -1,5 +1,27 @@
-//! Abstract geometric traits ([`ParametricCurve`], [`ParametricSurface`], [`SearchParameter`], etc.)
-//! and generic algorithms (parameter search, closest-point, curve/surface inclusion).
+//! Geometric trait definitions: `ParametricCurve`, `ParametricSurface`, `BoundedCurve`, `Invertible`, `Transformed`, and more.
+//!
+//! # Examples
+//!
+//! ```
+//! use monstertruck_traits::*;
+//! use monstertruck_core::cgmath64::*;
+//!
+//! // `range_tuple` comes from `BoundedCurve`, so the bound needs both traits.
+//! fn arc_length<C: ParametricCurve<Point = Point3> + BoundedCurve>(
+//!     curve: &C,
+//!     steps: usize,
+//! ) -> f64 {
+//!     let (t0, t1) = curve.range_tuple();
+//!     let dt = (t1 - t0) / steps as f64;
+//!     (0..steps)
+//!         .map(|i| {
+//!             let a = curve.evaluate(t0 + dt * i as f64);
+//!             let b = curve.evaluate(t0 + dt * (i + 1) as f64);
+//!             (b - a).magnitude()
+//!         })
+//!         .sum()
+//! }
+//! ```
 
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]

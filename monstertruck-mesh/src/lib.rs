@@ -1,4 +1,24 @@
-//! Polygon mesh data structures (triangle/quad/n-gon) with OBJ and STL I/O.
+//! Polygon mesh data structures and algorithms.
+//!
+//! # Examples
+//!
+//! ```
+//! use monstertruck_mesh::*;
+//!
+//! let positions = vec![
+//!     Point3::new(0.0, 0.0, 0.0),
+//!     Point3::new(1.0, 0.0, 0.0),
+//!     Point3::new(0.0, 1.0, 0.0),
+//! ];
+//! let faces = Faces::from_iter(&[[0, 1, 2]]);
+//! let mesh = PolygonMesh::new(
+//!     StandardAttributes { positions, ..Default::default() },
+//!     faces,
+//! );
+//!
+//! assert_eq!(mesh.positions().len(), 3);
+//! assert_eq!(mesh.tri_faces().len(), 1);
+//! ```
 
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]

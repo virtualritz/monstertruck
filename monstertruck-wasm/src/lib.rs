@@ -1,4 +1,4 @@
-//! Wasm wrapper API for monstertruck
+//! WebAssembly/JavaScript bindings for monstertruck.
 
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]

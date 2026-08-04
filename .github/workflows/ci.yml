@@ -64,7 +64,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
+      # Pinned: cargo-rdme's output is not stable across major versions, so an
+      # unpinned `@latest` would fail `readme-check` the day it majors.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-rdme@2.1.0
       - uses: extractions/setup-just@v2
+      - run: just readme-check
       - run: just test-cpu
       - run: just test-doc
 

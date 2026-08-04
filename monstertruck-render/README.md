@@ -1,10 +1,10 @@
 # `monstertruck-render`
 
+<!-- cargo-rdme start -->
+
 Shape and polygon mesh visualization built on `monstertruck-gpu`.
 
-> Forked from [`truck-rendimpl`](https://crates.io/crates/truck-rendimpl) v0.6.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use monstertruck_gpu::*;
@@ -28,6 +28,10 @@ let instance: PolygonInstance = creator.create_instance(
 );
 scene.add_object(&instance);
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-rendimpl`](https://crates.io/crates/truck-rendimpl) v0.6.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

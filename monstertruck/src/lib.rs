@@ -1,4 +1,6 @@
-//! # `monstertruck`
+//! **M**ultifarious **O**mnificence, **N**omenclature **S**tandardized,
+//! **T**erminology **E**nhanced & **R**efactored **Truck** -- a **Ru**st
+//! **C**ad **K**ernel.
 //!
 //! A Rust CAD kernel -- B-rep modeling, NURBS curves and surfaces, meshing,
 //! and GPU rendering. Forked from
@@ -139,13 +141,53 @@
 //!
 //! # Feature flags
 //!
-//! Each sub-crate is gated behind a feature with the same name. Convenience
-//! groups:
+//! Each sub-crate is gated behind a feature with the same name.
 //!
-//! - `default` -- `modeling` + `meshing`.
-//! - `full` -- everything except `gpu` and `wasm` glue.
-//! - `rkyv` -- enables zero-copy serialisation in
-//!   [`core`] and [`topology`].
+//! | Feature    | Crate                   | Also enables                    |
+//! | ---------- | ----------------------- | ------------------------------- |
+//! | _(always)_ | `monstertruck-core`     |                                 |
+//! | [`traits`]   | `monstertruck-traits`   |                                 |
+//! | `derive`   | `monstertruck-derive`   |                                 |
+//! | [`geometry`] | `monstertruck-geometry` | [`traits`]                        |
+//! | [`topology`] | `monstertruck-topology` |                                 |
+//! | [`mesh`]     | `monstertruck-mesh`     | [`traits`]                        |
+//! | [`modeling`] | `monstertruck-modeling` | [`geometry`], [`topology`]          |
+//! | [`meshing`]  | `monstertruck-meshing`  | [`mesh`], [`modeling`]              |
+//! | [`solid`]    | `monstertruck-solid`, `monstertruck-fillet`, `monstertruck-healing` | [`meshing`] |
+//! | [`assembly`] | `monstertruck-assembly` |                                 |
+//! | [`step`]     | `monstertruck-step`     | [`modeling`]                      |
+//! | [`gpu`]      | `monstertruck-gpu`      |                                 |
+//! | [`render`]   | `monstertruck-render`   | [`gpu`], [`mesh`], [`meshing`]        |
+//!
+//! [`solid`] pulls three crates rather than one: the boolean kernel plus the
+//! post-CSG, kernel-independent fillet and healing passes, which live in their
+//! own crates so that a different boolean backend can be substituted without
+//! duplicating them.
+//!
+//! ## Bundles
+//!
+//! | Bundle    | Features                                                               |
+//! | --------- | ---------------------------------------------------------------------- |
+//! | `default` | [`modeling`], [`meshing`]                                                  |
+//! | `full`    | [`modeling`], [`meshing`], [`solid`], [`assembly`], [`step`], [`render`], `derive` |
+//!
+//! `rkyv` is orthogonal: it enables zero-copy serialisation in [`core`] and
+//! [`topology`].
+//!
+//! ## Re-exported modules
+//!
+//! Each enabled feature exposes a top-level module:
+//!
+//! ```text
+//! monstertruck::core        // always available
+//! monstertruck::modeling    // with "modeling"
+//! monstertruck::meshing     // with "meshing"
+//! monstertruck::geometry    // with "geometry"
+//! monstertruck::solid       // with "solid" -- the boolean kernel
+//! monstertruck::fillet      // with "solid" -- post-CSG fillets
+//! monstertruck::healing     // with "solid" -- post-CSG shape healing
+//! monstertruck::step        // with "step"
+//! ```
 
 pub use monstertruck_core as core;
 

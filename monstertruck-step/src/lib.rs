@@ -1,10 +1,22 @@
-//! Reads/writes STEP files from/to monstertruck.
+//! STEP file import and export.
 //!
-//! # Current Status
+//! # Examples
 //!
-//! It is possible to output data modeled by monstertruck-modeling.
-//! Shapes created by set operations cannot be output yet.
-//! Input will come further down the road.
+//! ```
+//! use monstertruck_step::load::{*, step_geometry::*};
+//!
+//! // Parse a STEP file. Any `&[u8]` will do; this uses an in-repo fixture so
+//! // the example is executed rather than merely type-checked.
+//! let bytes = include_bytes!(concat!(
+//!     env!("CARGO_MANIFEST_DIR"),
+//!     "/../resources/step/occt-cube.step",
+//! ));
+//! let table = Table::from_step_bytes(bytes).unwrap();
+//!
+//! // Extract a shell and convert it to topology.
+//! let step_shell = table.shell.values().next().unwrap();
+//! let compressed = table.to_compressed_shell(step_shell).unwrap();
+//! ```
 
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]

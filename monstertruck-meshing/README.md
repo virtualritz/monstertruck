@@ -1,10 +1,10 @@
 # `monstertruck-meshing`
 
+<!-- cargo-rdme start -->
+
 Tessellation and meshing algorithms for B-rep shapes.
 
-> Forked from [`truck-meshalgo`](https://crates.io/crates/truck-meshalgo) v0.4.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use monstertruck_meshing::prelude::*;
@@ -19,6 +19,10 @@ let cube: Solid = builder::extrude(
 
 let mesh = cube.triangulation(0.01).to_polygon();
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-meshalgo`](https://crates.io/crates/truck-meshalgo) v0.4.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

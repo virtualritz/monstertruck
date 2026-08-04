@@ -1,10 +1,10 @@
 # `monstertruck-gpu`
 
+<!-- cargo-rdme start -->
+
 Graphics utility crate built on wgpu.
 
-> Forked from [`truck-platform`](https://crates.io/crates/truck-platform) v0.6.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use std::f64::consts::TAU;
@@ -29,6 +29,10 @@ let scene = Scene::new(handler, &SceneDescriptor {
     ..Default::default()
 });
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-platform`](https://crates.io/crates/truck-platform) v0.6.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

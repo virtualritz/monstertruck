@@ -1,10 +1,10 @@
 # `monstertruck-mesh`
 
+<!-- cargo-rdme start -->
+
 Polygon mesh data structures and algorithms.
 
-> Forked from [`truck-polymesh`](https://crates.io/crates/truck-polymesh) v0.6.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use monstertruck_mesh::*;
@@ -23,6 +23,10 @@ let mesh = PolygonMesh::new(
 assert_eq!(mesh.positions().len(), 3);
 assert_eq!(mesh.tri_faces().len(), 1);
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-polymesh`](https://crates.io/crates/truck-polymesh) v0.6.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

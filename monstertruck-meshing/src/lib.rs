@@ -1,4 +1,20 @@
-//! Mesh algorithms: tessellation of CAD shapes, mesh analysis, and mesh optimization filters.
+//! Tessellation and meshing algorithms for B-rep shapes.
+//!
+//! # Examples
+//!
+//! ```
+//! use monstertruck_meshing::prelude::*;
+//! use monstertruck_modeling::*;
+//!
+//! // Build a cube and tessellate it
+//! let v = builder::vertex(Point3::origin());
+//! let cube: Solid = builder::extrude(
+//!     &builder::extrude(&builder::extrude(&v, Vector3::unit_x()), Vector3::unit_y()),
+//!     Vector3::unit_z(),
+//! );
+//!
+//! let mesh = cube.triangulation(0.01).to_polygon();
+//! ```
 
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]

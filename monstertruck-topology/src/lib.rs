@@ -1,4 +1,4 @@
-//! Topological structs: vertex, edge, wire, face, shell, and solid
+//! Topological data structures: vertices, edges, wires, faces, shells, and solids.
 //!
 //! ## Examples
 //! The following sample code is a description of a topological tetrahedron as a solid model

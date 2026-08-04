@@ -1,9 +1,27 @@
-//! Crate for operation shapes. Provides boolean operations to Solid.
+//! Boolean operations for solids. Fillets live in `monstertruck-fillet` and shape
+//! healing in `monstertruck-healing`; both are post-CSG and kernel-independent.
 //!
-//! Shape healing and fillets are POST-CSG and kernel-independent, so they live
-//! in their own crates: `monstertruck-healing` and `monstertruck-fillet`. This
-//! crate is the classic polyline-marching boolean kernel and nothing else, which
-//! is what lets an external SSI boolean backend stand in for it wholesale.
+//! # Examples
+//!
+//! ```
+//! use monstertruck_modeling::*;
+//! use monstertruck_solid::or;
+//!
+//! // Two unit cubes overlapping in a 0.5 cube at one corner.
+//! let v = builder::vertex(Point3::origin());
+//! let cube_a: Solid = builder::extrude(
+//!     &builder::extrude(&builder::extrude(&v, Vector3::unit_x()), Vector3::unit_y()),
+//!     Vector3::unit_z(),
+//! );
+//! let cube_b = builder::translated(&cube_a, Vector3::new(0.5, 0.5, 0.5));
+//!
+//! // Boolean entry points are Result-shaped: `Ok(Solid)`, or a typed
+//! // `ShapeOpsError` -- never a silent `None`.
+//! // `monstertruck_modeling::*` brings its own 1-generic `Result` alias into
+//! // scope, so leave the binding unannotated rather than shadowing it.
+//! let union = or(&cube_a, &cube_b, 0.05);
+//! assert!(union.is_ok());
+//! ```
 
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]

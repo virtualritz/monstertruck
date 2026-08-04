@@ -1,10 +1,10 @@
 # `monstertruck-assembly`
 
+<!-- cargo-rdme start -->
+
 Assembly data structures using a directed acyclic graph (DAG).
 
-> Forked from [`truck-assembly`](https://crates.io/crates/truck-assembly) v0.1.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use monstertruck_assembly::assy::*;
@@ -21,6 +21,10 @@ assy.create_edge(nodes[2], nodes[3], 5.0.into());
 let path = assy.maximal_paths_iter(nodes[0]).next().unwrap();
 assert_eq!(path.matrix(), 30.0); // 2 * 3 * 5
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-assembly`](https://crates.io/crates/truck-assembly) v0.1.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

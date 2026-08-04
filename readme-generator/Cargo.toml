@@ -1,8 +1,0 @@
-[package]
-name = "readme-generator"
-version = "0.1.0"
-authors = ["Yoshinori Tanimura <tanimura@ricos.co.jp>"]
-edition = "2024"
-publish = false
-
-[dependencies]

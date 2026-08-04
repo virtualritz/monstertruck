@@ -54,7 +54,8 @@ Per-crate detail and porting verdicts live in [`TRUCK-PARITY.md`](TRUCK-PARITY.m
 - `LoadError` thiserror enum on the STEP loader; `Table::from_step` returns `Result`.
 - Parameter-space markers `D1`/`D2` -> `CurveParameter`/`SurfaceParameter`; `Univariate*`/`Bivariate*ScalarFunction` -> `CurveScalarFunction`/`SurfaceScalarFunction`; `KnotVec` -> `KnotVector`; `BSpline*` -> `Bspline*`.
 - Public names de-abbreviated: `attrs()` -> `attributes()`, `PartAttrs` -> `PartAttributes`, `DisplayByStep` -> `StepFormat`, `assy` -> `assembly`, `rbf_surface` -> `rolling_ball_fillet`, `af_surface` -> `approximate_fillet_surface`, `interpole` -> `interpolate`.
-- Every rename ships a deprecated `pub use OldName` alias so upstream-style code still compiles.
+- Accessors follow `<property>_<direction>`, matching `derivative_u`: `u_period`/`v_period` -> `period_u`/`period_v`, `Plane::u_axis`/`v_axis` -> `axis_u`/`axis_v`, `row_curve`/`column_curve` -> `curve_u`/`curve_v` (the row/column pair was crossed -- the *row* curve varies `u`).
+- Every rename ships a deprecated alias so upstream-style code still compiles.
 
 **Geometry Correctness**
 - `Sphere::search_nearest_parameter` guards: `acos` clamp, exact-pole `0/0` singularity, `point == center` singularity.
@@ -147,7 +148,9 @@ The `monstertruck` kernel is split into independent crates so you only need to p
 
 - [`monstertruck-topology`](monstertruck-topology/) -- Topological data structures: vertices, edges, wires, faces, shells, and solids.
 - [`monstertruck-modeling`](monstertruck-modeling/) -- Integrated geometric and topological modeling algorithms.
-- [`monstertruck-solid`](monstertruck-solid/) -- Boolean operations, fillets, and shape healing for solids.
+- [`monstertruck-solid`](monstertruck-solid/) -- Boolean operations for solids.
+- [`monstertruck-fillet`](monstertruck-fillet/) -- Rolling-ball fillets and chamfers on shell edges, a post-CSG pass.
+- [`monstertruck-healing`](monstertruck-healing/) -- Shape healing for solids imported from other CAD systems, also post-CSG.
 - [`monstertruck-assembly`](monstertruck-assembly/) -- Assembly data structures using a directed acyclic graph (DAG).
 
 ### Meshing & Rendering
@@ -165,6 +168,8 @@ The `monstertruck` kernel is split into independent crates so you only need to p
 ## Dependency Graph
 
 ![dependencies](./dependencies.svg)
+
+> This graph predates the `monstertruck-fillet` and `monstertruck-healing` extraction and does not show them yet.
 
 ## License
 

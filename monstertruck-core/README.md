@@ -1,10 +1,10 @@
 # `monstertruck-core`
 
+<!-- cargo-rdme start -->
+
 Core types and traits for linear algebra, curves, surfaces, and tolerances.
 
-> Forked from [`truck-base`](https://crates.io/crates/truck-base) v0.5.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use monstertruck_core::{cgmath64::*, tolerance::Tolerance, bounding_box::BoundingBox};
@@ -19,6 +19,10 @@ let bb: BoundingBox<Point3> = vec![
 ].into_iter().collect();
 assert_eq!(bb.diagonal(), Vector3::new(1.0, 2.0, 3.0));
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-base`](https://crates.io/crates/truck-base) v0.5.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

@@ -1,33 +1,30 @@
-//! Graphic utility library based on wgpu.
+//! Graphics utility crate built on wgpu.
 //!
-//! This crate is independent from other truck crates except `monstertruck-core`.
-//! It provides an API that allows users to handle drawing elements in a unified manner.
-//! By implementing the [`Rendered`] trait, developers can define
-//! their own rendering elements and have them rendered in [`Scene`]
-//! in the same way as other rendering elements provided by truck.
+//! # Examples
 //!
-//! This documentation is intended to be read by two kinds of people: users and developers.
-//! Users, those who just want to draw the shape of an existing mesh or boundary representation,
-//! will only use:
-//! - [`Scene`],
-//! - [`SceneDescriptor`],
-//! - [`DeviceHandler`],
-//! - [`Camera`], and
-//! - [`Light`].
+//! ```
+//! use std::f64::consts::TAU;
+//! use monstertruck_core::cgmath64::*;
+//! use monstertruck_gpu::*;
 //!
-//! If you are a developer, who wants to try out new
-//! visual representations, you can implement Rendered in your own structure and standardize it in
-//! a form that can be used by users in [`Scene`].
-//!
-//! The sample code in this crate is for developers.
-//! Users may wish to refer to the one in `monstertruck-render`.
-//!
-//! [`Rendered`]: ./trait.Rendered.html
-//! [`Scene`]: ./struct.Scene.html
-//! [`DeviceHandler`]: ./struct.DeviceHandler.html
-//! [`SceneDescriptor`]: ./struct.SceneDescriptor.html
-//! [`Camera`]: ./struct.Camera.html
-//! [`Light`]: ./struct.Light.html
+//! let handler = pollster::block_on(DeviceHandler::default_device());
+//! let scene = Scene::new(handler, &SceneDescriptor {
+//!     studio: StudioConfig {
+//!         camera: Camera {
+//!             matrix: Matrix4::look_at_rh(
+//!                 Point3::new(1.0, 1.0, 1.0),
+//!                 Point3::origin(),
+//!                 Vector3::unit_y(),
+//!             ).invert().unwrap(),
+//!             method: ProjectionMethod::perspective(Rad(TAU / 8.0)),
+//!             near_clip: 0.1,
+//!             far_clip: 100.0,
+//!         },
+//!         ..Default::default()
+//!     },
+//!     ..Default::default()
+//! });
+//! ```
 
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]

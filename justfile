@@ -14,7 +14,7 @@ default:
     @just --list
 
 # Aggregate: what CI runs.
-ci: fmt-check lint-check test-cpu test-doc meshing-features
+ci: fmt-check lint-check readme-check test-cpu test-doc meshing-features
 
 # Format code.
 fmt:
@@ -114,10 +114,62 @@ create-shape-json:
 doc:
     cargo doc --no-deps --workspace
 
-# Regenerate per-crate READMEs and fail if anything changed.
+# cargo-rdme's output is NOT stable across major versions: v1.5 left stripped
+# intralinks as broken markdown (`` `Shell`(monstertruck_topology::Shell) ``)
+# where v2 removes them properly. CI pins the exact version below, so pin the
+# same one locally or `readme-check` will disagree with CI.
+rdme_version := "2.1.0"
+
+# Crates whose README is generated from their crate-level docs by `cargo rdme`.
+# `monstertruck-derive` is deliberately absent: it does the opposite, pulling its
+# README into its docs via `#![doc = include_str!("../README.md")]`, so pointing
+# rdme at it would make the two definitions circular.
+rdme_crates := "monstertruck monstertruck-assembly monstertruck-core monstertruck-fillet monstertruck-geometry monstertruck-gpu monstertruck-healing monstertruck-mesh monstertruck-meshing monstertruck-modeling monstertruck-render monstertruck-solid monstertruck-step monstertruck-topology monstertruck-traits monstertruck-wasm"
+
+# Regenerate every generated README from its crate-level docs.
+#
+# The crate docs are the single source of truth; everything outside the
+# `<!-- cargo-rdme start -->`/`<!-- cargo-rdme end -->` markers (attribution,
+# license) is preserved. `--heading-base-level 1` shifts the docs' `# Examples`
+# to `##` so it sits under the README's title.
+readme:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    have="$(cargo rdme --version | awk '{ print $2 }')"
+    if [ "$have" != "{{ rdme_version }}" ]; then
+        printf 'cargo-rdme {{ rdme_version }} required, found %s.\n' "$have" >&2
+        printf 'Install it with: cargo install cargo-rdme --version {{ rdme_version }}\n' >&2
+        exit 1
+    fi
+    for crate in {{ rdme_crates }}; do
+        cargo rdme -w "$crate" --heading-base-level 1 --intralinks-strip-links --force
+    done
+
+# Verify every generated README matches its crate docs. Exit 3 on mismatch.
+#
+# `--intralinks-strip-links` renders intra-doc links as plain text instead of
+# resolving them to docs.rs URLs. That is deliberate: resolving them makes
+# cargo-rdme shell out to a PINNED nightly (`nightly-2026-06-22`), which turns a
+# README check into a toolchain dependency and fails on stable CI. The generated
+# output is byte-identical either way -- verified -- so nothing is lost, and the
+# intra-doc links keep working on docs.rs where they actually resolve.
 readme-check:
-    cargo run --bin readme-generator
-    git diff --exit-code
+    #!/usr/bin/env bash
+    set -uo pipefail
+    have="$(cargo rdme --version | awk '{ print $2 }')"
+    if [ "$have" != "{{ rdme_version }}" ]; then
+        printf 'cargo-rdme {{ rdme_version }} required, found %s.\n' "$have" >&2
+        printf 'Install it with: cargo install cargo-rdme --version {{ rdme_version }}\n' >&2
+        exit 1
+    fi
+    status=0
+    for crate in {{ rdme_crates }}; do
+        if ! cargo rdme -w "$crate" --heading-base-level 1 --intralinks-strip-links --check; then
+            printf 'README out of date: %s (run `just readme`)\n' "$crate" >&2
+            status=1
+        fi
+    done
+    exit "$status"
 
 # Wipe target directory.
 clean:

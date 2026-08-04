@@ -1,16 +1,20 @@
 # `monstertruck-traits`
 
+<!-- cargo-rdme start -->
+
 Geometric trait definitions: `ParametricCurve`, `ParametricSurface`, `BoundedCurve`, `Invertible`, `Transformed`, and more.
 
-> Forked from [`truck-geotrait`](https://crates.io/crates/truck-geotrait) v0.4.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use monstertruck_traits::*;
 use monstertruck_core::cgmath64::*;
 
-fn arc_length<C: ParametricCurve<Point = Point3>>(curve: &C, steps: usize) -> f64 {
+// `range_tuple` comes from `BoundedCurve`, so the bound needs both traits.
+fn arc_length<C: ParametricCurve<Point = Point3> + BoundedCurve>(
+    curve: &C,
+    steps: usize,
+) -> f64 {
     let (t0, t1) = curve.range_tuple();
     let dt = (t1 - t0) / steps as f64;
     (0..steps)
@@ -22,6 +26,10 @@ fn arc_length<C: ParametricCurve<Point = Point3>>(curve: &C, steps: usize) -> f6
         .sum()
 }
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-geotrait`](https://crates.io/crates/truck-geotrait) v0.4.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

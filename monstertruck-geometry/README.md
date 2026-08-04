@@ -1,10 +1,10 @@
 # `monstertruck-geometry`
 
+<!-- cargo-rdme start -->
+
 Geometric primitives: knot vectors, B-splines, NURBS, and T-splines.
 
-> Forked from [`truck-geometry`](https://crates.io/crates/truck-geometry) v0.5.0 by [ricosjp](https://github.com/ricosjp/truck).
-
-## Quick Start
+## Examples
 
 ```rust
 use monstertruck_geometry::prelude::*;
@@ -22,6 +22,10 @@ let mid = curve.evaluate(0.5);    // Point3 at parameter t=0.5
 let tan = curve.derivative(0.5);  // tangent vector
 let (t0, t1) = curve.range_tuple(); // (0.0, 1.0)
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-geometry`](https://crates.io/crates/truck-geometry) v0.5.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 
