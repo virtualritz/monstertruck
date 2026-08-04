@@ -1,15 +1,19 @@
 # `monstertruck-derive`
 
-Derive macros for geometric traits. Re-exported by `monstertruck-traits` (feature `"derive"`).
+<!-- cargo-rdme start -->
 
-> Forked from [`truck-derivers`](https://crates.io/crates/truck-derivers) v0.1.0 by [ricosjp](https://github.com/ricosjp/truck).
+Derive macros for geometric traits. Re-exported by `monstertruck-traits`
+(feature `"derive"`).
 
-## Quick Start
+## Examples
 
-<!-- rust,ignore: the example needs monstertruck-traits, which depends on
-this crate -- the doctest can never link it here (lib.rs includes this
-README as the crate doc). It compiles as a monstertruck-traits doctest. -->
-```rust,ignore
+The example is `ignore`d rather than run: it needs `monstertruck-traits`,
+which DEPENDS on this crate, so this crate can never dev-depend on it to
+link the doctest. These derives are exercised for real in
+`monstertruck-traits/tests/derives.rs` (behind that crate's `derive` and
+`polynomial` features), where the dependency direction works.
+
+```rust
 use monstertruck_traits::prelude::*;
 
 /// An enum of curve types -- derive macros delegate trait methods
@@ -27,8 +31,12 @@ let pt = curve.evaluate(0.5); // dispatches to Line::evaluate
 Users do not need to depend on this crate directly:
 
 ```toml
-monstertruck-traits = { version = "0.1", features = ["derive"] }
+monstertruck-traits = { version = "0.3", features = ["derive"] }
 ```
+
+<!-- cargo-rdme end -->
+
+> Forked from [`truck-derivers`](https://crates.io/crates/truck-derivers) v0.1.0 by [ricosjp](https://github.com/ricosjp/truck).
 
 ## License
 

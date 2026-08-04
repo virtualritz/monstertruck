@@ -1,4 +1,34 @@
-#![doc = include_str!("../README.md")]
+//! Derive macros for geometric traits. Re-exported by `monstertruck-traits`
+//! (feature `"derive"`).
+//!
+//! # Examples
+//!
+//! The example is `ignore`d rather than run: it needs `monstertruck-traits`,
+//! which DEPENDS on this crate, so this crate can never dev-depend on it to
+//! link the doctest. These derives are exercised for real in
+//! `monstertruck-traits/tests/derives.rs` (behind that crate's `derive` and
+//! `polynomial` features), where the dependency direction works.
+//!
+//! ```rust,ignore
+//! use monstertruck_traits::prelude::*;
+//!
+//! /// An enum of curve types -- derive macros delegate trait methods
+//! /// to the inner type via match arms.
+//! #[derive(Clone, ParametricCurve, BoundedCurve)]
+//! pub enum MyCurve {
+//!     Line(Line<Point3>),
+//!     Nurbs(NurbsCurve<Vector4>),
+//! }
+//!
+//! let curve: MyCurve = MyCurve::Line(/* ... */);
+//! let pt = curve.evaluate(0.5); // dispatches to Line::evaluate
+//! ```
+//!
+//! Users do not need to depend on this crate directly:
+//!
+//! ```toml
+//! monstertruck-traits = { version = "0.3", features = ["derive"] }
+//! ```
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]
 #![warn(
