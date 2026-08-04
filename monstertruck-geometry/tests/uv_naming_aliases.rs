@@ -1,4 +1,4 @@
-//! The deprecated prefix-form `u_*` / `v_*` accessors must keep answering, and
+//! The deprecated prefix-form `u_*`/`v_*` accessors must keep answering, and
 //! must answer IDENTICALLY to the postfix names that replaced them.
 //!
 //! `u_period` -> `period_u`, `v_period` -> `period_v` (`ParametricSurface`) and
