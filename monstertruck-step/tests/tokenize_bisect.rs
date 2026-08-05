@@ -89,12 +89,12 @@ fn bisect_ai14r() { bisect("Ai-14R", "Ai-14R.stp") }
 /// ISO 10303-21 escapes a literal `'` inside a string by doubling it. Imperial
 /// CAD is full of them -- inch marks in thread callouts and part names.
 ///
-/// Published step_p21 0.4.0 refuses the escape. UN-IGNORED: this test IS the
-/// acceptance test for the upstream fix, which landed in
-/// <https://github.com/ricosjp/step_p21/pull/254> (originally
-/// <https://github.com/ricosjp/step_p21/pull/251>) and reaches us through the
-/// `[patch.crates-io]` rev pin in the workspace manifest. It goes red again if
-/// that pin is dropped before step_p21 publishes a release containing the fix.
+/// Published `ruststep` 0.4.0 refuses the escape. UN-IGNORED: this test IS the
+/// acceptance test for the fix, which landed on ruststep master in
+/// <https://github.com/ricosjp/ruststep/pull/254> (originally
+/// <https://github.com/ricosjp/ruststep/pull/251>) but was never released, so
+/// it reaches us through `step-p21` -- our published fork carrying both. It goes red again if the
+/// dependency is moved back to a `ruststep` release.
 #[test]
 fn escaped_apostrophe_in_a_string_literal() {
     let base = |name: &str| {
@@ -148,11 +148,11 @@ fn minimal(entity: &str) -> String {
 /// not the window, the entity type, or the harness. In particular the non-empty
 /// aggregate differs by exactly one element.
 ///
-/// Published step_p21 0.4.0 refuses `()`. UN-IGNORED: this test IS the
-/// acceptance test for the upstream fix, which landed in
-/// <https://github.com/ricosjp/step_p21/pull/254> (originally
-/// <https://github.com/ricosjp/step_p21/pull/251>) and reaches us through the
-/// `[patch.crates-io]` rev pin in the workspace manifest.
+/// Published `ruststep` 0.4.0 refuses `()`. UN-IGNORED: this test IS the
+/// acceptance test for the fix, which landed on ruststep master in
+/// <https://github.com/ricosjp/ruststep/pull/254> (originally
+/// <https://github.com/ricosjp/ruststep/pull/251>) but was never released, so
+/// it reaches us through `step-p21` -- our published fork carrying both.
 #[test]
 fn empty_aggregate_in_an_entity_parameter() {
     let cases = [
