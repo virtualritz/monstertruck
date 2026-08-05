@@ -88,7 +88,7 @@ enum SubAbstractShape {
 /// Describe STEP file header
 #[derive(Clone, Debug, AsRef, Deref, DerefMut, From, Into)]
 #[wasm_bindgen]
-pub struct StepHeaderDescriptor(monstertruck_step::save::StepHeaderDescriptor);
+pub struct StepHeaderDescriptor(monstertruck_io::step::save::StepHeaderDescriptor);
 
 #[wasm_bindgen]
 impl StepHeaderDescriptor {
@@ -167,7 +167,7 @@ macro_rules! impl_shape {
             }
             /// write shape to STEP
             pub fn to_step(&self, header: StepHeaderDescriptor) -> String {
-                use monstertruck_step::save::{CompleteStepDisplay, StepModel};
+                use monstertruck_io::step::save::{CompleteStepDisplay, StepModel};
                 let compressed = self.0.compress();
                 CompleteStepDisplay::new(
                     StepModel::from(&compressed),

@@ -29,7 +29,7 @@ solid = [
     "monstertruck-modeling/fillet",
 ]
 assembly = ["monstertruck-assembly"]
-step = ["modeling", "monstertruck-step"]
+step = ["modeling", "dep:monstertruck-io", "monstertruck-io/step"]
 gpu = ["monstertruck-gpu"]
 render = ["gpu", "mesh", "meshing", "monstertruck-render"]
 rkyv = ["monstertruck-core/rkyv", "monstertruck-topology?/rkyv"]
@@ -47,7 +47,7 @@ monstertruck-meshing = { workspace = true, optional = true }
 monstertruck-modeling = { workspace = true, optional = true }
 monstertruck-render = { workspace = true, optional = true }
 monstertruck-solid = { workspace = true, optional = true }
-monstertruck-step = { workspace = true, optional = true }
+monstertruck-io = { workspace = true, optional = true }
 monstertruck-topology = { workspace = true, optional = true }
 monstertruck-traits = { workspace = true, optional = true }
 
@@ -55,6 +55,6 @@ monstertruck-traits = { workspace = true, optional = true }
 anyhow = { workspace = true }
 monstertruck-modeling = { workspace = true, features = ["fillet"] }
 monstertruck-solid = { workspace = true }
-monstertruck-step = { workspace = true }
+monstertruck-io = { workspace = true, features = ["step"] }
 monstertruck-topology = { workspace = true }
 serde_json = { workspace = true }

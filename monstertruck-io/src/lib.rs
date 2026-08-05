@@ -1,48 +1,57 @@
-//! Import CAD exchange formats into monstertruck's B-rep types.
+//! Read and write CAD exchange formats as monstertruck B-rep.
 //!
-//! # Status
+//! One crate, one feature per format. A caller reaches every format monstertruck
+//! supports through a single dependency instead of one crate per format, and
+//! compiles only the formats it asks for.
 //!
-//! The `step` feature is complete: it re-exports monstertruck's own reader and
-//! writer, which work today.
+//! # Formats
+//!
+//! | format | feature | default | state |
+//! | --- | --- | --- | --- |
+//! | ISO 10303-21 (STEP) | `step` | yes | read and write, ours |
+//! | IGES 5.3 | `iges` | no | **placeholder, see below** |
+//!
+//! ```
+//! use monstertruck_io::step::load::{*, step_geometry::*};
+//!
+//! let bytes = include_bytes!(concat!(
+//!     env!("CARGO_MANIFEST_DIR"),
+//!     "/../resources/step/occt-cube.step",
+//! ));
+//! let table = Table::from_step_bytes(bytes).unwrap();
+//! let step_shell = table.shell.values().next().unwrap();
+//! let compressed = table.to_compressed_shell(step_shell).unwrap();
+//! ```
+//!
+//! # STEP
+//!
+//! [`step`] is monstertruck's own reader and writer, moved here from the retired
+//! `monstertruck-step` crate. The API is unchanged -- `monstertruck_step::load`
+//! became [`step::load`], `monstertruck_step::save` became [`step::save`].
+//!
+//! It deliberately does **not** go through cadmpeg. It is measured against a
+//! corpus, routes analytic surfaces onto closed forms so booleans stay exact,
+//! and reports what a file lost. Measured 2026-08-04 on `occt-cylinder.step`:
+//! monstertruck reads it correctly, and cadmpeg drops the whole
+//! `MANIFOLD_SOLID_BREP` because one parameter-space `CIRCLE` fails to decode
+//! (cadmpeg/cadmpeg#79). Writing STEP is ours outright.
+//!
+//! # IGES, and why it refuses
 //!
 //! The `iges` feature is a **placeholder**. It decodes a real file with a real
-//! decoder, but the last step -- turning the recovered geometry into
-//! monstertruck's B-rep -- is unwritten, so it returns
-//! [`Error::Unimplemented`] rather than an empty model. A caller therefore
-//! cannot mistake "not written yet" for "this file contained no geometry", and
-//! the two are reported by distinct variants. That distinction is the point: an
-//! importer that silently returns nothing is worse than one that refuses, and
+//! decoder -- [`cadmpeg`](https://github.com/cadmpeg/cadmpeg), which monstertruck
+//! has no reason to reimplement -- but the last step, turning the recovered
+//! geometry into monstertruck's B-rep, is unwritten. So it returns
+//! [`Error::Unimplemented`] rather than an empty model, and an empty document
+//! gets its own [`Error::NoGeometry`]. A caller therefore cannot mistake "not
+//! written yet" for "this file contained no geometry". An importer that silently
+//! returns nothing is worse than one that refuses, and
 //! `tests/refuses_rather_than_returns_nothing.rs` fails the day it stops.
 //!
-//! # Why one crate and not one per format
-//!
-//! The [`cadmpeg`](https://github.com/cadmpeg/cadmpeg) codecs -- IGES today,
-//! others later -- all decode into a single intermediate representation,
-//! `cadmpeg_ir::CadIr`. The per-format work is therefore only *which decoder to
-//! call*; the part that carries the risk, mapping recovered geometry and
-//! topology onto [`monstertruck_topology`], is shared. So this crate holds one
-//! converter in [`cadmpeg`] and a thin module per format on top of it.
-//!
-//! Each format is a feature, and none is on by default: a consumer that wants
-//! STEP should not compile an IGES reader.
-//!
-//! # Division of labour
-//!
-//! | format | feature | decoder | why |
-//! | --- | --- | --- | --- |
-//! | ISO 10303-21 (STEP) | `step` | [`monstertruck_step`] | monstertruck's own reader and writer |
-//! | IGES 5.3 | `iges` | `cadmpeg-codec-iges` | nothing to gain from writing our own |
-//!
-//! STEP deliberately does **not** go through cadmpeg. monstertruck's own STEP
-//! reader is measured against a corpus, routes analytic surfaces onto closed
-//! forms so booleans stay exact, and reports what a file lost. Measured
-//! 2026-08-04 on `occt-cylinder.step`: monstertruck reads it correctly, and
-//! cadmpeg drops the whole `MANIFOLD_SOLID_BREP` because one parameter-space
-//! `CIRCLE` fails to decode (cadmpeg/cadmpeg#79). Writing STEP stays ours
-//! outright.
-//!
-//! IGES is the opposite case: monstertruck cannot read it at all, and cadmpeg
-//! scores it highly, so "imperfect but loud" beats "absent".
+//! Adding a format is cheap because the cadmpeg codecs all decode into ONE
+//! intermediate representation, `cadmpeg_ir::CadIr`: the per-format work is only
+//! which decoder to call, and the part that carries the risk -- mapping recovered
+//! geometry onto [`monstertruck_topology`] -- is shared, in [`cadmpeg`].
 
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]
@@ -55,6 +64,10 @@
     unused_import_braces,
     unused_qualifications
 )]
+
+// `monstertruck-derive` emits `monstertruck_io::step::save::...` into the code
+// it generates, and a crate cannot name itself in a path without this alias.
+extern crate self as monstertruck_io;
 
 mod error;
 

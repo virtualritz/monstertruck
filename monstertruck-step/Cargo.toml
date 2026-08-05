@@ -1,53 +1,21 @@
 [package]
 name = "monstertruck-step"
-version = "0.3.3"
-authors = ["Yoshinori Tanimura <tanimura@ricos.co.jp>", "Moritz Moeller <virtualritz@protonmail.com>"]
+version = "0.3.4"
+authors = [
+    "Yoshinori Tanimura <tanimura@ricos.co.jp>",
+    "Moritz Moeller <virtualritz@protonmail.com>",
+]
 edition = "2024"
-description = "STEP file import and export"
+description = "Deprecated: STEP support moved into monstertruck-io behind the `step` feature"
 homepage = "https://github.com/virtualritz/monstertruck"
 repository = "https://github.com/virtualritz/monstertruck"
-license = "Apache-2.0"
-
+readme = "README.md"
 keywords = ["truck", "graphics"]
 categories = ["graphics"]
+license = "Apache-2.0"
 
-[features]
-default = ["load", "derive"]
-load = ["derive", "derive_more", "step-p21", "serde", "monstertruck-traits"]
-derive = ["monstertruck-derive"]
-
+# Nothing in this workspace depends on this crate any more -- it exists solely so
+# a `monstertruck-step = "0.3"` requirement already published against keeps
+# resolving and compiling. The implementation lives in monstertruck-io.
 [dependencies]
-# `web_time::Instant` is `std::time::Instant` on native and falls back
-# to `performance.now()` on wasm32-unknown-unknown (where std::time::*
-# panics).
-web-time = { workspace = true }
-chrono = { workspace = true }
-derive_more = { workspace = true, optional = true }
-step-p21 = { workspace = true, optional = true }
-serde = { workspace = true, optional = true }
-thiserror = { workspace = true }
-monstertruck-assembly = { workspace = true }
-monstertruck-derive = { workspace = true, optional = true }
-monstertruck-geometry = { workspace = true }
-monstertruck-traits = { workspace = true, optional = true }
-monstertruck-modeling = { workspace = true }
-monstertruck-mesh = { workspace = true }
-monstertruck-topology = { workspace = true }
-
-[dev-dependencies]
-anyhow = { workspace = true }
-clap = { workspace = true }
-image = { workspace = true }
-itertools = { workspace = true }
-proptest = { workspace = true }
-serde_json = { workspace = true }
-# The `vtk` feature pulls in `vtkio` so the `step-to-mesh` example can
-# emit `.vtu`. Dev-only -- downstream users on the default
-# (non-`vtk`) feature set never see `vtkio` -> `lz4_flex`
-# (RUSTSEC-2026-0041).
-monstertruck-meshing = { workspace = true, features = ["vtk"] }
-monstertruck-modeling = { workspace = true, features = ["fillet"] }
-# The published shape-healing crate: the solidify tests heal boolean output
-# through its public `extract_healed_trimmed_solid`.
-monstertruck-healing = { workspace = true }
-vtkio = { workspace = true }
+monstertruck-io = { workspace = true, features = ["step"] }

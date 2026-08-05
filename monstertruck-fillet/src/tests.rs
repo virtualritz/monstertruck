@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use monstertruck_geometry::prelude::*;
+use monstertruck_io::step::save::{DisplayByStep, StepCurve, StepLength, StepModels};
 use monstertruck_meshing::prelude::*;
-use monstertruck_step::save::{DisplayByStep, StepCurve, StepLength, StepModels};
 
 use super::geometry::*;
 use super::types::*;

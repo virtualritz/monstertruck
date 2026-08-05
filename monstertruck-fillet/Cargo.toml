@@ -34,7 +34,7 @@ getrandom_wasm_js = { package = "getrandom", version = "0.3", features = ["wasm_
 
 [dev-dependencies]
 proptest = { workspace = true }
-monstertruck-step = { workspace = true }
+monstertruck-io = { workspace = true, features = ["step"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 getrandom = { workspace = true }

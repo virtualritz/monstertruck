@@ -234,7 +234,7 @@ pub use monstertruck_healing as healing;
 pub use monstertruck_assembly as assembly;
 
 #[cfg(feature = "step")]
-pub use monstertruck_step as step;
+pub use monstertruck_io::step;
 
 #[cfg(feature = "gpu")]
 pub use monstertruck_gpu as gpu;

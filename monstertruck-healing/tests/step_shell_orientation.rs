@@ -46,12 +46,12 @@
 //! and `ensure_winding_matches_normals` in `monstertruck-meshing` for the
 //! second.
 
-use monstertruck_meshing::prelude::*;
-use monstertruck_modeling::*;
-use monstertruck_step::load::{
+use monstertruck_io::step::load::{
     Table,
     step_geometry::{Curve3D, StepParameterCurve, Surface as StepSurface},
 };
+use monstertruck_meshing::prelude::*;
+use monstertruck_modeling::*;
 use monstertruck_topology::compress::CompressedTrimmedSolid;
 
 const TOL: f64 = 1.0e-3;

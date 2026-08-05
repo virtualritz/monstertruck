@@ -1209,7 +1209,7 @@ pub fn derive_transform_m4(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(StepLength)]
 pub fn derive_step_length(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    let trait_name = quote! { monstertruck_step::save::StepLength };
+    let trait_name = quote! { monstertruck_io::step::save::StepLength };
     let ty = input.ident;
     let generics_params = input.generics;
     let where_predicates = generics_params
@@ -1260,7 +1260,7 @@ pub fn derive_step_length(input: TokenStream) -> TokenStream {
 // upstream-compatible `DisplayByStep` alias.
 fn derive_step_format_impl(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    let trait_name = quote! { monstertruck_step::save::StepFormat };
+    let trait_name = quote! { monstertruck_io::step::save::StepFormat };
     let ty = input.ident;
     let generics_params = input.generics;
     let where_predicates = generics_params
@@ -1330,7 +1330,7 @@ pub fn derive_display_by_step(input: TokenStream) -> TokenStream { derive_step_f
 #[proc_macro_derive(StepCurve)]
 pub fn derive_step_curve(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    let trait_name = quote! { monstertruck_step::save::StepCurve };
+    let trait_name = quote! { monstertruck_io::step::save::StepCurve };
     let ty = input.ident;
     let generics_params = input.generics;
     let where_predicates = generics_params
@@ -1382,7 +1382,7 @@ pub fn derive_step_curve(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(StepSurface)]
 pub fn derive_step_surface(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
-    let trait_name = quote! { monstertruck_step::save::StepSurface };
+    let trait_name = quote! { monstertruck_io::step::save::StepSurface };
     let ty = input.ident;
     let generics_params = input.generics;
     let where_predicates = generics_params

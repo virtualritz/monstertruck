@@ -83,14 +83,16 @@ monstertruck-derive = { version = "0.3.3", path = "monstertruck-derive" }
 monstertruck-fillet = { version = "0.3.3", path = "monstertruck-fillet" }
 monstertruck-geometry = { version = "0.3.3", path = "monstertruck-geometry" }
 monstertruck-healing = { version = "0.3.3", path = "monstertruck-healing" }
-monstertruck-io = { version = "0.3.3", path = "monstertruck-io" }
+# `default-features = false` here so each consumer names the formats it wants;
+# a workspace-inherited dependency cannot have this overridden downstream.
+monstertruck-io = { version = "0.3.3", path = "monstertruck-io", default-features = false }
 monstertruck-mesh = { version = "0.3.3", path = "monstertruck-mesh" }
 monstertruck-meshing = { version = "0.3.3", path = "monstertruck-meshing" }
 monstertruck-modeling = { version = "0.3.3", path = "monstertruck-modeling" }
 monstertruck-gpu = { version = "0.3.3", path = "monstertruck-gpu" }
 monstertruck-render = { version = "0.3.3", path = "monstertruck-render" }
 monstertruck-solid = { version = "0.3.3", path = "monstertruck-solid" }
-monstertruck-step = { version = "0.3.3", path = "monstertruck-step" }
+monstertruck-step = { version = "0.3.4", path = "monstertruck-step" }
 monstertruck-topology = { version = "0.3.3", path = "monstertruck-topology" }
 monstertruck-traits = { version = "0.3.3", path = "monstertruck-traits" }
 

@@ -10,10 +10,10 @@ use monstertruck_geometry::prelude::{
     BoundedCurve, ExactParameterBoundary2D, ParameterCurve, Point2, SearchNearestParameter,
     SearchParameter,
 };
+use monstertruck_io::step::save::{CompleteStepDisplay, StepModel};
 use monstertruck_mesh::PolylineCurve as PolylineCurve2;
 use monstertruck_modeling::*;
 use monstertruck_solid::{difference, or};
-use monstertruck_step::save::{CompleteStepDisplay, StepModel};
 use monstertruck_topology::compress::{CompressedSolid, CompressedTrimmedSolid};
 use std::f64::consts::PI;
 use std::path::PathBuf;

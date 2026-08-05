@@ -1,29 +1,38 @@
 [package]
 name = "monstertruck-io"
 version = "0.3.3"
-authors = ["Moritz Moeller <virtualritz@protonmail.com>"]
+authors = [
+    "Yoshinori Tanimura <tanimura@ricos.co.jp>",
+    "Moritz Moeller <virtualritz@protonmail.com>",
+]
 edition = "2024"
-description = "Import CAD exchange formats into monstertruck's B-rep types"
+description = "Read and write CAD exchange formats as monstertruck B-rep"
 homepage = "https://github.com/virtualritz/monstertruck"
 repository = "https://github.com/virtualritz/monstertruck"
 readme = "README.md"
-keywords = ["cad", "iges", "step", "import", "brep"]
+keywords = ["cad", "step", "iges", "brep", "truck"]
 categories = ["graphics", "science", "parser-implementations"]
 license = "Apache-2.0"
-# Held back from crates.io until the cadmpeg conversion is written. Publishing a
-# crate whose only novel entry point returns `Unimplemented` would advertise an
-# importer that cannot import.
-publish = false
 
-# One feature per format. Nothing is on by default: every format drags a decoder
-# and its dependency tree, and a consumer that wants STEP should not compile an
-# IGES reader.
+# One feature per format, so a consumer that wants STEP does not compile an IGES
+# reader. `step` is on by default because it is the format monstertruck reads and
+# writes natively and the one nearly every caller means.
 [features]
-default = []
+default = ["step"]
+# Reading and writing ISO 10303-21 (STEP). `load` and `derive` mirror the feature
+# names the retired `monstertruck-step` crate used, so a consumer's feature list
+# ports across unchanged.
+step = ["load", "derive"]
+load = [
+    "derive",
+    "derive_more",
+    "step-p21",
+    "serde",
+    "monstertruck-traits",
+]
+derive = ["monstertruck-derive"]
 # Reading IGES 5.3, via the cadmpeg codec.
 iges = ["cadmpeg-codec-iges", "cadmpeg-codec-core", "cadmpeg-ir"]
-# Reading and writing ISO 10303-21, via monstertruck's own STEP crate.
-step = ["monstertruck-step"]
 
 [dependencies]
 monstertruck-core = { workspace = true }
@@ -32,11 +41,38 @@ monstertruck-modeling = { workspace = true }
 monstertruck-topology = { workspace = true }
 thiserror = { workspace = true }
 
-monstertruck-step = { workspace = true, optional = true }
+# STEP. `web_time::Instant` is `std::time::Instant` on native and falls back to
+# `performance.now()` on wasm32-unknown-unknown (where `std::time::*` panics).
+web-time = { workspace = true }
+chrono = { workspace = true }
+derive_more = { workspace = true, optional = true }
+step-p21 = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+monstertruck-assembly = { workspace = true }
+monstertruck-derive = { workspace = true, optional = true }
+monstertruck-traits = { workspace = true, optional = true }
+monstertruck-mesh = { workspace = true }
 
-# The cadmpeg codecs all decode into ONE intermediate representation, which is
-# why this crate needs a single converter rather than one per format.
+# IGES. The cadmpeg codecs all decode into ONE intermediate representation, which
+# is why this crate holds a single converter rather than one per format.
 cadmpeg-ir = { version = "0.3", optional = true }
 cadmpeg-codec-iges = { version = "0.3", optional = true }
 # `ReadSeek` is public here rather than in cadmpeg-ir.
 cadmpeg-codec-core = { version = "0.3", optional = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+image = { workspace = true }
+itertools = { workspace = true }
+proptest = { workspace = true }
+serde_json = { workspace = true }
+# The `vtk` feature pulls in `vtkio` so the `step-to-mesh` example can emit
+# `.vtu`. Dev-only -- downstream users on the default (non-`vtk`) feature set
+# never see `vtkio` -> `lz4_flex` (RUSTSEC-2026-0041).
+monstertruck-meshing = { workspace = true, features = ["vtk"] }
+monstertruck-modeling = { workspace = true, features = ["fillet"] }
+# The published shape-healing crate: the solidify tests heal boolean output
+# through its public `extract_healed_trimmed_solid`.
+monstertruck-healing = { workspace = true }
+vtkio = { workspace = true }

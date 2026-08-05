@@ -1,7 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 # Crates exercised by `test-cpu` (anything that doesn't need a GPU).
-cpu_crates := "-p monstertruck-core -p monstertruck-traits -p monstertruck-geometry -p monstertruck-topology -p monstertruck-mesh -p monstertruck-meshing -p monstertruck-modeling -p monstertruck-solid -p monstertruck-healing -p monstertruck-fillet -p monstertruck-step"
+cpu_crates := "-p monstertruck-core -p monstertruck-traits -p monstertruck-geometry -p monstertruck-topology -p monstertruck-mesh -p monstertruck-meshing -p monstertruck-modeling -p monstertruck-solid -p monstertruck-healing -p monstertruck-fillet -p monstertruck-io"
 
 # Crates exercised by `test-gpu`.
 gpu_crates := "-p monstertruck-gpu -p monstertruck-render"

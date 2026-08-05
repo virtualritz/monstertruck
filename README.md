@@ -82,7 +82,7 @@ Per-crate detail and porting verdicts live in [`TRUCK-PARITY.md`](TRUCK-PARITY.m
 - Scalar-generic `v2` trait family (`CurveParameter<T>`/`SurfaceParameter<T>`, `SearchParameter<v2::D2<T>>`, etc.) -- no upstream equivalent; default scalar still `f64`.
 - `SurfaceDerivatives::absolute_derivatives` + `combinatorial_derivative(s)` ported from upstream's `truck-base::ders`, backing the offset surface family.
 - `BasisWindow` active-window B-spline basis evaluation (upstream [`77e25635`](https://github.com/ricosjp/truck/commit/77e25635)), reimplemented with `SmallVec`; both `BsplineCurve` and `BsplineSurface` only touch active control points.
-- STEP face preview tool at [`monstertruck-step/examples/preview-step-face.rs`](monstertruck-step/examples/preview-step-face.rs) for diagnostic visualization -- canonical replacement for ad-hoc `eprintln!`-in-`loops_store` debugging; see [AGENTS.md](AGENTS.md#visual-debugging-for-meshingtrim-bugs).
+- STEP face preview tool at [`monstertruck-io/examples/preview-step-face.rs`](monstertruck-io/examples/preview-step-face.rs) for diagnostic visualization -- canonical replacement for ad-hoc `eprintln!`-in-`loops_store` debugging; see [AGENTS.md](AGENTS.md#visual-debugging-for-meshingtrim-bugs).
 
 **Testing Infrastructure**
 - STEP watertightness invariant + boolean-ops-over-STEP-geometry coverage ([issue #91](https://github.com/virtualritz/monstertruck/issues/91)).
@@ -162,7 +162,8 @@ The `monstertruck` kernel is split into independent crates so you only need to p
 
 ### I/O & Bindings
 
-- [`monstertruck-step`](monstertruck-step/) -- STEP file import and export.
+- [`monstertruck-io`](monstertruck-io/) -- CAD exchange formats, one feature per format: STEP (read and write, on by default), IGES (placeholder).
+- [`monstertruck-step`](monstertruck-step/) -- **deprecated**, a re-export of `monstertruck-io`'s `step` module.
 - [`monstertruck-wasm`](monstertruck-wasm/) -- Wasm/JavaScript bindings.
 
 ## Dependency Graph

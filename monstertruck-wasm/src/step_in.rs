@@ -1,7 +1,7 @@
 use gloo::console;
+use monstertruck_io::step::load::Table as StepTable;
+use monstertruck_io::step::load::step_geometry::*;
 use monstertruck_meshing::tessellation::*;
-use monstertruck_step::load::Table as StepTable;
-use monstertruck_step::load::step_geometry::*;
 use monstertruck_topology::compress::*;
 
 use crate::*;

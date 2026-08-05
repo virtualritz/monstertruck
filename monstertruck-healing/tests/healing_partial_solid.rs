@@ -28,11 +28,11 @@
 //! gate; the corpus row that pins the same thing on real ROTOR geometry lives
 //! with the external SSI boolean backend.
 
-use monstertruck_modeling::*;
-use monstertruck_step::load::{
+use monstertruck_io::step::load::{
     Table,
     step_geometry::{Curve3D, StepParameterCurve, Surface as StepSurface},
 };
+use monstertruck_modeling::*;
 use monstertruck_topology::compress::CompressedTrimmedSolid;
 use monstertruck_topology::errors::Error;
 
