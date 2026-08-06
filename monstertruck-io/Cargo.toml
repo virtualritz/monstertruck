@@ -31,8 +31,15 @@ load = [
     "monstertruck-traits",
 ]
 derive = ["monstertruck-derive"]
-# Reading IGES 5.3, via the cadmpeg codec.
-iges = ["cadmpeg-codec-iges", "cadmpeg-codec-core", "cadmpeg-ir"]
+# The cadmpeg intermediate representation, its converter, and the cadmpeg-backed
+# readers. STEP is deliberately available through BOTH this and the `step`
+# feature above: ours is the measurement baseline the boolean kernel is
+# characterised against, and swapping it out is not a decision to make without
+# evidence. Enabling both lets the two be run over the same corpus and diffed.
+cadmpeg = ["cadmpeg-ir", "cadmpeg-core", "cadmpeg-codec-step"]
+# Reading IGES 5.3. monstertruck has no IGES reader of its own, so this one has
+# no alternative to sit alongside.
+iges = ["cadmpeg", "cadmpeg-codec-iges"]
 
 [dependencies]
 monstertruck-core = { workspace = true }
@@ -55,10 +62,12 @@ monstertruck-mesh = { workspace = true }
 
 # IGES. The cadmpeg codecs all decode into ONE intermediate representation, which
 # is why this crate holds a single converter rather than one per format.
-cadmpeg-ir = { version = "0.3", optional = true }
-cadmpeg-codec-iges = { version = "0.3", optional = true }
-# `ReadSeek` is public here rather than in cadmpeg-ir.
-cadmpeg-codec-core = { version = "0.3", optional = true }
+cadmpeg-ir = { version = "0.4", optional = true }
+cadmpeg-codec-iges = { version = "0.4", optional = true }
+cadmpeg-codec-step = { version = "0.4", optional = true }
+# `ReadSeek` lives here, not in cadmpeg-ir. Renamed from `cadmpeg-codec-core`
+# at 0.4; depending on both would give two incompatible `ReadSeek` traits.
+cadmpeg-core = { version = "0.4", optional = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

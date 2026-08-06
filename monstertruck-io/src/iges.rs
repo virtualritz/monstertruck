@@ -9,7 +9,7 @@ use crate::{
     Result,
     cadmpeg::{ImportedSolid, to_solids},
 };
-use cadmpeg_codec_core::ReadSeek;
+use cadmpeg_core::ReadSeek;
 use cadmpeg_ir::codec::{CodecEntry, DecodeOptions};
 
 const FORMAT: &str = "IGES";

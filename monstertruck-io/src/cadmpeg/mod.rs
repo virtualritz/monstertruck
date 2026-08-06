@@ -26,6 +26,8 @@
 //! [`CompressedShell`]: monstertruck_topology::compress::CompressedShell
 //! [`Surface::Plane`]: monstertruck_modeling::Surface
 
+pub mod step;
+
 use crate::{Error, Result};
 use monstertruck_modeling::{Curve, Point3, Surface};
 use monstertruck_topology::compress::CompressedSolid;

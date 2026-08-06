@@ -67,13 +67,14 @@
 
 // `monstertruck-derive` emits `monstertruck_io::step::save::...` into the code
 // it generates, and a crate cannot name itself in a path without this alias.
+#[cfg(feature = "load")]
 extern crate self as monstertruck_io;
 
 mod error;
 
 pub use error::{Error, Result};
 
-#[cfg(feature = "iges")]
+#[cfg(feature = "cadmpeg")]
 pub mod cadmpeg;
 #[cfg(feature = "iges")]
 pub mod iges;
