@@ -188,7 +188,7 @@ fn linear_bspline_division(
 /// question there is never whether THIS representative is inside the range but
 /// whether ANY whole-period offset of it is -- mirroring the period branch of
 /// the STEP loader's `normalize_axis`
-/// (`monstertruck-step/src/load/step_geometry/geom_impls.rs`), except that this
+/// (`monstertruck-io/src/step/load/step_geometry/geom_impls.rs`), except that this
 /// one only MEASURES; it never rewrites the value.
 ///
 /// A non-finite value is infinitely far outside every bounded domain.
@@ -236,7 +236,7 @@ struct SurfaceParameterDomain {
 /// regard it as a segment"), and `Line::evaluate` is `p0 + t * (p1 - p0)`, so
 /// the parameter is a multiple of the CHORD, not a fraction of any real extent.
 /// The STEP loader builds a cylinder's profile as `Line(p, p + z)` with a UNIT
-/// axis direction (`monstertruck-step/src/load/step_types.rs`,
+/// axis direction (`monstertruck-io/src/step/load/step_types.rs`,
 /// `From<&CylindricalSurface>`), so `t` there is a world-scale axial distance
 /// on an axially UNBOUNDED surface and `[0, 1]` is one arbitrary metre of it.
 ///
@@ -520,7 +520,7 @@ const fn attempt_plan(attempt: usize) -> (bool, bool) {
 /// The four solver attempts follow [`attempt_plan`]: the two HINTED attempts
 /// first, then the two unhinted ones, alternating solvers within each pair, with
 /// [`EXACT_FIRST`] choosing only which solver opens. This is NOT the plan of the
-/// STEP loader's twin (`monstertruck-step/src/load/step_geometry/geom_impls.rs`,
+/// STEP loader's twin (`monstertruck-io/src/step/load/step_geometry/geom_impls.rs`,
 /// `sampled_parameter_boundary`), which groups by solver instead; see
 /// [`attempt_plan`] for the full asymmetry. Both solvers are unbounded Newtons
 /// (`monstertruck-traits/src/algo/surface.rs`), so either can walk off the end
@@ -559,7 +559,7 @@ const fn attempt_plan(attempt: usize) -> (bool, bool) {
 /// lands. Both routes hand a `NaN` or `inf` parameter to downstream geometry.
 ///
 /// The STEP loader's twin has never had either route: its `normalize_axis`
-/// (`monstertruck-step/src/load/step_geometry/geom_impls.rs`) returns `None` for
+/// (`monstertruck-io/src/step/load/step_geometry/geom_impls.rs`) returns `None` for
 /// a non-finite value, so the whole chain fails typed. Rejecting rather than
 /// clamping is C3's resolution style, and rejecting rather than substituting a
 /// value keeps this routine's promise that every answer it returns came from a
@@ -1672,7 +1672,7 @@ pub enum Surface {
     /// Carried as the analytic type rather than its (exact) rational net so the
     /// CLOSED-FORM [`ParameterDivision2D`] survives the STEP conversion -- see
     /// the module note on `TryFrom<&Surface> for Surface` in
-    /// `monstertruck-step/src/load/step_geometry/geom_impls.rs`. Spec 012 U1.2.
+    /// `monstertruck-io/src/step/load/step_geometry/geom_impls.rs`. Spec 012 U1.2.
     SphericalSurface(Processor<Sphere, Matrix4>),
     /// Analytic torus, posed by the processor's transform. Same reason as
     /// [`Surface::SphericalSurface`]; spindle tori never reach this variant.
@@ -2885,7 +2885,7 @@ mod project_domain_tests {
     /// axis is real, and the two must be decided independently.
     ///
     /// Built the way `From<&CylindricalSurface>`
-    /// (`monstertruck-step/src/load/step_types.rs`) builds one: revolve
+    /// (`monstertruck-io/src/step/load/step_types.rs`) builds one: revolve
     /// `Line(p, p + z)` with a UNIT axis, then invert -- which swaps the
     /// `Processor`'s axes, so the periodic axis is `u`. A face on such a
     /// cylinder legitimately occupies tens of world units of `v`, and the
