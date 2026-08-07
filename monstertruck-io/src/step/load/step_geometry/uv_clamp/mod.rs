@@ -14,7 +14,7 @@
 //! `monstertruck-geometry/src/specifieds/plane.rs::parameter_range`, whose own
 //! doc forbids treating the unit square as a domain). Spec 011 fixed the
 //! modeling twin by not asking those axes the question
-//! (`monstertruck-modeling/src/geometry.rs::reported_range_bounds_the_surface`);
+//! (`monstertruck-modeling/src/geometry/::reported_range_bounds_the_surface`);
 //! [`reported_range_bounds_the_surface`] here is the same idea against the STEP
 //! surface enum.
 //!
@@ -39,7 +39,9 @@
 //! **`clamp_near_range` is NOT a C3 guard, and the ledger says it is.**
 //! `KERNEL_FAILURE_CLASSES.md` C3 records that "the STEP crate's twin
 //! (`geom_impls.rs:21-124`) has had this discipline all along via
-//! `normalize_axis` / `clamp_near_range`". It has not. `clamp_near_range` acts
+//! `normalize_axis` / `clamp_near_range`". It has not. (The ledger's wording is
+//! quoted as written; that code now lives in `geom_impls/parameter_trims.rs`,
+//! named rather than line-numbered because line ranges rot.) `clamp_near_range` acts
 //! only on an excess BELOW `TOLERANCE`; a C3 excursion is by definition orders
 //! of magnitude outside the domain (the class's own example is `-44.146` on a
 //! `[0, 1]` domain) and passes through this function untouched. Measured on

@@ -221,7 +221,7 @@ fn hint_parameter(hint: SearchParameterHint2D) -> Option<(f64, f64)> {
 /// literally discarded (`_: H`).
 ///
 /// That is invisible until a torus reaches a caller that PROJECTS a boundary.
-/// `sampled_parameter_boundary` (`monstertruck-modeling/src/geometry.rs`) walks
+/// `sampled_parameter_boundary` (`monstertruck-modeling/src/geometry/`) walks
 /// a face's boundary polyline through this routine, feeding each answer forward
 /// as the next hint, so one seam vertex spelled a whole period away from its
 /// neighbours leaves the face's parameter LOOP with a spike across the entire

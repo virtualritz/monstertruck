@@ -131,7 +131,7 @@ Before any code ports:
 
 Target:
 
-- `monstertruck-step/src/load/step_geometry/geom_impls.rs`.
+- `monstertruck-io/src/step/load/step_geometry/geom_impls/`.
 
 Why:
 
@@ -148,7 +148,7 @@ Porting notes:
 
 Target:
 
-- `monstertruck-step/src/load/step_geometry/geom_impls.rs`.
+- `monstertruck-io/src/step/load/step_geometry/geom_impls/`.
 
 Why:
 
@@ -181,7 +181,7 @@ Porting notes:
 
 Targets:
 
-- `monstertruck-traits/src/algo/surface.rs`.
+- `monstertruck-traits/src/algo/surface/mod.rs`.
 - Possibly related derivative code only if required by tests.
 
 Why:
@@ -282,7 +282,7 @@ Why:
 
 Design requirements before porting:
 
-- Add `monstertruck-step/src/save/assembly.rs`.
+- Add `monstertruck-io/src/step/save/assembly/`.
 - Use `assembly` in new names, not `assy`.
 - Keep existing `monstertruck-assembly::assy` module only for compatibility; do not spread the abbreviation.
 - Avoid upstream's broad generic display machinery if a smaller API can cover current `monstertruck` shapes.

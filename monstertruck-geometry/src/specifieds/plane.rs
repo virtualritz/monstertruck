@@ -168,7 +168,7 @@ impl ParametricSurface for Plane {
     ///   rejects intersections falling outside the reported ranges.
     ///
     /// The modeling projector
-    /// (`monstertruck-modeling/src/geometry.rs::project_onto_surface_domain`) is
+    /// (`monstertruck-modeling/src/geometry/::project_onto_surface_domain`) is
     /// the one place that sees the square and is provably inert against it: a
     /// plane's projection is linear, so all four solver attempts return the same
     /// answer and the out-of-domain rejection falls through to the unchanged
