@@ -2,6 +2,20 @@
 
 use monstertruck_core::{cgmath64::*, tolerance::*};
 use monstertruck_traits::{polynomial::PolynomialCurve, *};
+use rand::{RngExt, SeedableRng, rngs::StdRng};
+
+/// Deterministic generator for the randomised search trials below.
+///
+/// These tests explore a numerical search over random inputs and assert that it
+/// succeeds on most of them. With an unseeded generator that is a coin flip on
+/// every run: the suite fails on its own schedule, for reasons no diff explains,
+/// and a genuine regression is indistinguishable from bad luck. Seeding fixes
+/// the sample, so the trial set is identical on every machine and every run --
+/// the coverage is the same, the verdict is reproducible.
+///
+/// Changing the seed re-rolls the sample and is a real change to what is
+/// measured; do it deliberately, and re-measure the pass counts below.
+fn trial_rng() -> StdRng { StdRng::seed_from_u64(0x5445_5354_5F52_4E47) }
 
 #[test]
 fn polycurve_test() {
@@ -38,20 +52,20 @@ fn polycurve_presearch() {
     assert_eq!(t, 0.0);
 }
 
-fn exec_polycurve_snp_on_curve() -> bool {
+fn exec_polycurve_snp_on_curve(rng: &mut StdRng) -> bool {
     let coef: Vec<Vector3> = (0..5)
         .map(|_| {
             Vector3::new(
-                20.0 * rand::random::<f64>() - 10.0,
-                20.0 * rand::random::<f64>() - 10.0,
-                20.0 * rand::random::<f64>() - 10.0,
+                20.0 * rng.random::<f64>() - 10.0,
+                20.0 * rng.random::<f64>() - 10.0,
+                20.0 * rng.random::<f64>() - 10.0,
             )
         })
         .collect();
     let poly = PolynomialCurve::<Point3>(coef);
-    let t = 20.0 * rand::random::<f64>() - 10.0;
+    let t = 20.0 * rng.random::<f64>() - 10.0;
     let pt = poly.subs(t);
-    let hint = t + 1.0 * rand::random::<f64>() - 0.5;
+    let hint = t + 1.0 * rng.random::<f64>() - 0.5;
     match algo::curve::search_nearest_parameter(&poly, pt, hint, 100) {
         Some(res) => match poly.subs(res).near(&pt) {
             true => true,
@@ -71,17 +85,25 @@ fn exec_polycurve_snp_on_curve() -> bool {
 
 #[test]
 fn polycurve_snp_on_curve() {
-    let count = (0..100).filter(|_| exec_polycurve_snp_on_curve()).count();
-    assert!(count > 90, "wrong answer: {:?}", 100 - count);
+    let mut rng = trial_rng();
+    let count = (0..100)
+        .filter(|_| exec_polycurve_snp_on_curve(&mut rng))
+        .count();
+    assert_eq!(
+        count,
+        97,
+        "snp_on_curve regressed: {} of 100 failed",
+        100 - count
+    );
 }
 
-fn exec_polycurve_division() -> bool {
+fn exec_polycurve_division(rng: &mut StdRng) -> bool {
     let coef: Vec<Vector3> = (0..5)
         .map(|_| {
             Vector3::new(
-                20.0 * rand::random::<f64>() - 10.0,
-                20.0 * rand::random::<f64>() - 10.0,
-                20.0 * rand::random::<f64>() - 10.0,
+                20.0 * rng.random::<f64>() - 10.0,
+                20.0 * rng.random::<f64>() - 10.0,
+                20.0 * rng.random::<f64>() - 10.0,
             )
         })
         .collect();
@@ -103,17 +125,25 @@ fn exec_polycurve_division() -> bool {
 
 #[test]
 fn polycurve_division() {
-    let count = (0..100).filter(|_| exec_polycurve_division()).count();
+    let mut rng = trial_rng();
+    let count = (0..100)
+        .filter(|_| exec_polycurve_division(&mut rng))
+        .count();
     println!("division error: {}", 100 - count);
-    assert!(count > 98);
+    assert_eq!(
+        count,
+        100,
+        "division regressed: {} of 100 failed",
+        100 - count
+    );
 }
 
-fn exec_polycurve_closest_point() -> bool {
+fn exec_polycurve_closest_point(rng: &mut StdRng) -> bool {
     let a = [
-        1.0 * rand::random::<f64>() - 0.5,
-        1.0 * rand::random::<f64>() - 0.5,
-        1.0 * rand::random::<f64>() - 0.5,
-        1.0 * rand::random::<f64>() - 0.5,
+        1.0 * rng.random::<f64>() - 0.5,
+        1.0 * rng.random::<f64>() - 0.5,
+        1.0 * rng.random::<f64>() - 0.5,
+        1.0 * rng.random::<f64>() - 0.5,
     ];
     let coef0 = vec![
         Vector3::new(0.0, 0.0, 0.0),
@@ -142,16 +172,24 @@ fn exec_polycurve_closest_point() -> bool {
 
 #[test]
 fn polycurve_closest_point() {
-    let count = (0..10).filter(|_| exec_polycurve_closest_point()).count();
+    let mut rng = trial_rng();
+    let count = (0..10)
+        .filter(|_| exec_polycurve_closest_point(&mut rng))
+        .count();
     println!("searching closest point error: {}", 10 - count);
-    assert!(count >= 7);
+    assert_eq!(
+        count,
+        10,
+        "closest_point regressed: {} of 10 failed",
+        10 - count
+    );
 }
 
-fn exec_polycurve_intersection_point() -> bool {
+fn exec_polycurve_intersection_point(rng: &mut StdRng) -> bool {
     let a = [
-        0.5 * rand::random::<f64>() + 0.1,
-        0.5 * rand::random::<f64>() + 0.1,
-        1.0 * rand::random::<f64>() - 0.5,
+        0.5 * rng.random::<f64>() + 0.1,
+        0.5 * rng.random::<f64>() + 0.1,
+        1.0 * rng.random::<f64>() - 0.5,
     ];
     let (x, y) = (-1.0 + a[0], 1.0 - a[1]);
     let coef0 = vec![
@@ -179,9 +217,15 @@ fn exec_polycurve_intersection_point() -> bool {
 
 #[test]
 fn polycurve_intersection_point() {
+    let mut rng = trial_rng();
     let count = (0..10)
-        .filter(|_| exec_polycurve_intersection_point())
+        .filter(|_| exec_polycurve_intersection_point(&mut rng))
         .count();
     println!("searching intersection point error: {}", 10 - count);
-    assert!(count >= 7);
+    assert_eq!(
+        count,
+        10,
+        "intersection_point regressed: {} of 10 failed",
+        10 - count
+    );
 }

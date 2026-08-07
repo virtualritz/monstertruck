@@ -1,7 +1,12 @@
 /target
 */target
 Cargo.lock
-*proptest-regressions*
+# proptest failure seeds are NOT ignored: they are findings, not noise.
+# proptest writes them so "everyone who runs the test benefits from these
+# saved cases", and ignoring them means a real counterexample stays on one
+# machine, where it looks like flakiness to everyone else. That is exactly
+# what happened with nurbscurve concat_positive_test. monstertruck-private
+# tracks them already; this aligns.
 
 .bin/
 pkg/

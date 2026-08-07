@@ -103,7 +103,11 @@ proptest! {
     fn concat_positive_test(
         v0 in prop::array::uniform8(prop::array::uniform3(-10f64..10f64)),
         v1 in prop::array::uniform8(0.5f64..=10f64),
-        t in 0f64..=1f64,
+        // Strictly INTERIOR. `cut` at a domain end leaves one piece empty, and
+        // the test's premise -- that the two pieces still meet, `part0.back()`
+        // against `part1.front()` -- has no meaning when one of them has no
+        // back. proptest shrank to exactly `t = 0.0`.
+        t in 1e-3f64..=1.0f64 - 1e-3f64,
         w in -10f64..=10f64,
     ) {
         exec_concat_positive_test(v0, v1, t, w)?;

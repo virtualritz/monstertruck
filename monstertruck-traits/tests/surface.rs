@@ -8,6 +8,20 @@ use monstertruck_core::tolerance::{Origin, Tolerance};
 use monstertruck_traits::algo::surface;
 use monstertruck_traits::polynomial::{PolynomialCurve, PolynomialSurface};
 use monstertruck_traits::{ParametricCurve, ParametricSurface, ParametricSurface3D};
+use rand::{RngExt, SeedableRng, rngs::StdRng};
+
+/// Deterministic generator for the randomised search trials below.
+///
+/// These tests explore a numerical search over random inputs and assert that it
+/// succeeds on most of them. With an unseeded generator that is a coin flip on
+/// every run: the suite fails on its own schedule, for reasons no diff explains,
+/// and a genuine regression is indistinguishable from bad luck. Seeding fixes
+/// the sample, so the trial set is identical on every machine and every run --
+/// the coverage is the same, the verdict is reproducible.
+///
+/// Changing the seed re-rolls the sample and is a real change to what is
+/// measured; do it deliberately, and re-measure the pass counts below.
+fn trial_rng() -> StdRng { StdRng::seed_from_u64(0x5445_5354_5F52_4E47) }
 
 #[test]
 fn polysurface() {
@@ -72,25 +86,25 @@ fn polysurface_presearch() {
     assert_eq!(v, 0.3);
 }
 
-fn exec_polysurface_snp_on_surface() -> bool {
+fn exec_polysurface_snp_on_surface(rng: &mut StdRng) -> bool {
     let coef0 = vec![
-        Vector3::new(0.0, 1.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(1.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(0.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
+        Vector3::new(0.0, 1.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(1.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(0.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
     ];
     let coef1 = vec![
-        Vector3::new(1.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(0.0, 1.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(0.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
+        Vector3::new(1.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(0.0, 1.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(0.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
     ];
     let curve0 = PolynomialCurve::<Point3>(coef0);
     let curve1 = PolynomialCurve::<Point3>(coef1);
     let poly = PolynomialSurface::by_tensor(curve0, curve1);
-    let u = 10.0 * rand::random::<f64>() - 5.0;
-    let v = 10.0 * rand::random::<f64>() - 5.0;
+    let u = 10.0 * rng.random::<f64>() - 5.0;
+    let v = 10.0 * rng.random::<f64>() - 5.0;
     let pt = poly.subs(u, v);
-    let u0 = u + 0.2 * rand::random::<f64>() - 0.1;
-    let v0 = v + 0.2 * rand::random::<f64>() - 0.1;
+    let u0 = u + 0.2 * rng.random::<f64>() - 0.1;
+    let v0 = v + 0.2 * rng.random::<f64>() - 0.1;
     match surface::search_nearest_parameter(&poly, pt, (u0, v0), 100) {
         Some(res) => match poly.subs(res.0, res.1).near(&pt) {
             true => true,
@@ -119,9 +133,10 @@ fn exec_polysurface_snp_on_surface() -> bool {
 
 #[test]
 fn polysurface_snp_on_surface() {
+    let mut rng = trial_rng();
     let flag = (0..10).any(|_| {
         let count = (0..100)
-            .filter(|_| exec_polysurface_snp_on_surface())
+            .filter(|_| exec_polysurface_snp_on_surface(&mut rng))
             .count();
         if count <= 90 {
             eprintln!("wrong answer: {:?}", 100 - count);
@@ -131,27 +146,27 @@ fn polysurface_snp_on_surface() {
     assert!(flag, "too many failure");
 }
 
-fn exec_polysurface_sp_on_surface() -> bool {
+fn exec_polysurface_sp_on_surface(rng: &mut StdRng) -> bool {
     let coef0 = vec![
-        Vector3::new(0.0, 1.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(1.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(0.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(0.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
+        Vector3::new(0.0, 1.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(1.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(0.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(0.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
     ];
     let coef1 = vec![
-        Vector3::new(1.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(0.0, 1.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(0.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
-        Vector3::new(0.0, 0.0, 3.0 * rand::random::<f64>() - 1.5),
+        Vector3::new(1.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(0.0, 1.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(0.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
+        Vector3::new(0.0, 0.0, 3.0 * rng.random::<f64>() - 1.5),
     ];
     let curve0 = PolynomialCurve::<Point3>(coef0);
     let curve1 = PolynomialCurve::<Point3>(coef1);
     let poly = PolynomialSurface::by_tensor(curve0, curve1);
-    let u = 10.0 * rand::random::<f64>() - 5.0;
-    let v = 10.0 * rand::random::<f64>() - 5.0;
+    let u = 10.0 * rng.random::<f64>() - 5.0;
+    let v = 10.0 * rng.random::<f64>() - 5.0;
     let pt = poly.subs(u, v);
-    let u0 = u + 2.0 * rand::random::<f64>() - 1.0;
-    let v0 = v + 2.0 * rand::random::<f64>() - 1.0;
+    let u0 = u + 2.0 * rng.random::<f64>() - 1.0;
+    let v0 = v + 2.0 * rng.random::<f64>() - 1.0;
     match surface::search_parameter(&poly, pt, (u0, v0), 100) {
         Some(res) => match poly.subs(res.0, res.1).near(&pt) {
             true => true,
@@ -180,9 +195,10 @@ fn exec_polysurface_sp_on_surface() -> bool {
 
 #[test]
 fn polysurface_sp_on_surface() {
+    let mut rng = trial_rng();
     let flag = (0..10).any(|_| {
         let count = (0..100)
-            .filter(|_| exec_polysurface_sp_on_surface())
+            .filter(|_| exec_polysurface_sp_on_surface(&mut rng))
             .count();
         if count <= 90 {
             eprintln!("wrong answer: {:?}", 100 - count);
@@ -192,8 +208,8 @@ fn polysurface_sp_on_surface() {
     assert!(flag, "too many failure");
 }
 
-fn exec_polysurface_intersection_point() -> bool {
-    let (a, b) = (rand::random::<f64>(), rand::random::<f64>());
+fn exec_polysurface_intersection_point(rng: &mut StdRng) -> bool {
+    let (a, b) = (rng.random::<f64>(), rng.random::<f64>());
     let coef0 = vec![
         Vector3::new(0.0, 1.0, 0.0),
         Vector3::new(1.0, 0.0, 0.0),
@@ -221,22 +237,28 @@ fn exec_polysurface_intersection_point() -> bool {
 
 #[test]
 fn polysurface_intersection_point() {
+    let mut rng = trial_rng();
     let count = (0..10)
-        .filter(|_| exec_polysurface_intersection_point())
+        .filter(|_| exec_polysurface_intersection_point(&mut rng))
         .count();
-    assert!(count > 7, "wrong answer: {:?}", 10 - count);
+    assert_eq!(
+        count,
+        10,
+        "intersection_point regressed: {} of 10 failed",
+        10 - count
+    );
 }
 
-fn exec_polysurface_division() -> bool {
+fn exec_polysurface_division(rng: &mut StdRng) -> bool {
     let coef0 = vec![
-        Vector3::new(0.0, 1.0, 10.0 * rand::random::<f64>() - 5.0),
-        Vector3::new(1.0, 0.0, 10.0 * rand::random::<f64>() - 5.0),
-        Vector3::new(0.0, 0.0, 10.0 * rand::random::<f64>() - 5.0),
+        Vector3::new(0.0, 1.0, 10.0 * rng.random::<f64>() - 5.0),
+        Vector3::new(1.0, 0.0, 10.0 * rng.random::<f64>() - 5.0),
+        Vector3::new(0.0, 0.0, 10.0 * rng.random::<f64>() - 5.0),
     ];
     let coef1 = vec![
-        Vector3::new(1.0, 0.0, 10.0 * rand::random::<f64>() - 5.0),
-        Vector3::new(0.0, 1.0, 10.0 * rand::random::<f64>() - 5.0),
-        Vector3::new(0.0, 0.0, 10.0 * rand::random::<f64>() - 5.0),
+        Vector3::new(1.0, 0.0, 10.0 * rng.random::<f64>() - 5.0),
+        Vector3::new(0.0, 1.0, 10.0 * rng.random::<f64>() - 5.0),
+        Vector3::new(0.0, 0.0, 10.0 * rng.random::<f64>() - 5.0),
     ];
     let curve0 = PolynomialCurve::<Point3>(coef0);
     let curve1 = PolynomialCurve::<Point3>(coef1);
@@ -271,8 +293,11 @@ fn exec_polysurface_division() -> bool {
 
 #[test]
 fn polysurface_division() {
-    let count = (0..10).filter(|_| exec_polysurface_division()).count();
-    assert!(count > 8, "wrong answer: {:?}", 10 - count);
+    let mut rng = trial_rng();
+    let count = (0..10)
+        .filter(|_| exec_polysurface_division(&mut rng))
+        .count();
+    assert_eq!(count, 10, "division regressed: {} of 10 failed", 10 - count);
 }
 
 #[test]
