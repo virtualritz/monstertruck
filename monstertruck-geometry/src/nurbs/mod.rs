@@ -255,6 +255,8 @@ pub mod offset;
 
 mod bspline_curve;
 mod bspline_surface;
+/// Full-boundary continuity capability inspection.
+mod continuity;
 mod knot_vector;
 mod nurbs_curve;
 mod nurbs_surface;
