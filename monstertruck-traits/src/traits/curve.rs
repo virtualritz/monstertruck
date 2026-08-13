@@ -4,6 +4,7 @@ use monstertruck_core::{
     cgmath64::{Point2, Point3, Vector2, Vector3},
     tolerance::{TOLERANCE, Tolerance},
 };
+use rand::{RngExt, SeedableRng, rngs::StdRng};
 use std::fmt::Debug;
 use thiserror::Error;
 
@@ -487,28 +488,41 @@ impl<C: SnapCurveEndpoints> SnapCurveEndpoints for Box<C> {
     }
 }
 
+/// Deterministic generator for the exported `*_random_test` helpers.
+///
+/// These helpers are called from three test files across two crates, and they
+/// drew from the GLOBAL generator: every run explored a different sample, so a
+/// failure was a coin flip that no diff explained and no proptest seed could
+/// reproduce -- the randomness lives here, not in the caller's generated input.
+/// Seeding fixes the sample. The trial counts and the geometry exercised are
+/// unchanged; only the verdict became reproducible.
+///
+/// Changing the seed re-rolls what these helpers cover, in every caller at once.
+fn trial_rng() -> StdRng { StdRng::seed_from_u64(0x4355_5256_455F_524E) }
+
 /// positive test implementation for `ParameterTransform` by random transformation
 pub fn parameter_transform_random_test<C>(curve: &C, trials: usize)
 where
     C: ParameterTransform,
     C::Point: Debug + Tolerance,
     C::Vector: Debug + Tolerance + std::ops::Mul<f64, Output = C::Vector>, {
-    (0..trials).for_each(move |_| exec_parameter_transform_random_test(curve))
+    let mut rng = trial_rng();
+    (0..trials).for_each(|_| exec_parameter_transform_random_test(curve, &mut rng))
 }
 
-fn exec_parameter_transform_random_test<C>(curve: &C)
+fn exec_parameter_transform_random_test<C>(curve: &C, rng: &mut StdRng)
 where
     C: ParameterTransform,
     C::Point: Debug + Tolerance,
     C::Vector: Debug + Tolerance + std::ops::Mul<f64, Output = C::Vector>, {
-    let a = rand::random::<f64>() + 0.5;
-    let b = rand::random::<f64>() * 2.0;
+    let a = rng.random::<f64>() + 0.5;
+    let b = rng.random::<f64>() * 2.0;
     let transformed = curve.parameter_transformed(a, b);
 
     let (t0, t1) = curve.range_tuple();
     assert_near!(transformed.range_tuple().0, t0 * a + b);
     assert_near!(transformed.range_tuple().1, t1 * a + b);
-    let p = rand::random::<f64>();
+    let p = rng.random::<f64>();
     let t = (1.0 - p) * t0 + p * t1;
     assert_near!(transformed.evaluate(t * a + b), curve.evaluate(t));
     assert_near!(transformed.derivative(t * a + b) * a, curve.derivative(t));
@@ -528,10 +542,11 @@ where
     C0::Vector: Debug + Tolerance,
     C0::Output: BoundedCurve<Point = C0::Point, Vector = C0::Vector> + Debug,
     C1: BoundedCurve<Point = C0::Point, Vector = C0::Vector>, {
-    (0..trials).for_each(move |_| exec_concat_random_test(curve0, curve1))
+    let mut rng = trial_rng();
+    (0..trials).for_each(|_| exec_concat_random_test(curve0, curve1, &mut rng))
 }
 
-fn exec_concat_random_test<C0, C1>(curve0: &C0, curve1: &C1)
+fn exec_concat_random_test<C0, C1>(curve0: &C0, curve1: &C1, rng: &mut StdRng)
 where
     C0: Concat<C1>,
     C0::Point: Debug + Tolerance,
@@ -545,14 +560,14 @@ where
     assert_near!(concatted.range_tuple().0, t0);
     assert_near!(concatted.range_tuple().1, t2);
 
-    let p = rand::random::<f64>();
+    let p = rng.random::<f64>();
     let t = t0 * (1.0 - p) + t1 * p;
     assert_near!(concatted.evaluate(t), curve0.evaluate(t));
     assert_near!(concatted.derivative(t), curve0.derivative(t));
     assert_near!(concatted.derivative_2(t), curve0.derivative_2(t));
     assert_near!(concatted.front(), curve0.front());
 
-    let p = rand::random::<f64>();
+    let p = rng.random::<f64>();
     let t = t1 * (1.0 - p) + t2 * p;
     assert_near!(concatted.evaluate(t), curve1.evaluate(t));
     assert_near!(concatted.derivative(t), curve1.derivative(t));
@@ -566,17 +581,18 @@ where
     C: Cut,
     C::Point: Debug + Tolerance,
     C::Vector: Debug + Tolerance, {
-    (0..trials).for_each(move |_| exec_cut_random_test(curve))
+    let mut rng = trial_rng();
+    (0..trials).for_each(|_| exec_cut_random_test(curve, &mut rng))
 }
 
-fn exec_cut_random_test<C>(curve: &C)
+fn exec_cut_random_test<C>(curve: &C, rng: &mut StdRng)
 where
     C: Cut,
     C::Point: Debug + Tolerance,
     C::Vector: Debug + Tolerance, {
     let mut part0 = curve.clone();
     let (t0, t1) = curve.range_tuple();
-    let p = rand::random::<f64>();
+    let p = rng.random::<f64>();
     let t = t0 * (1.0 - p) + t1 * p;
     let part1 = part0.cut(t);
     assert_near!(part0.range_tuple().0, t0);
@@ -584,13 +600,13 @@ where
     assert_near!(part1.range_tuple().0, t);
     assert_near!(part1.range_tuple().1, t1);
 
-    let p = rand::random::<f64>();
+    let p = rng.random::<f64>();
     let s = t0 * (1.0 - p) + t * p;
     assert_near!(part0.evaluate(s), curve.evaluate(s));
     assert_near!(part0.front(), curve.front());
     assert_near!(part0.back(), curve.evaluate(t));
 
-    let p = rand::random::<f64>();
+    let p = rng.random::<f64>();
     let s = t * (1.0 - p) + t1 * p;
     assert_near!(part1.evaluate(s), curve.evaluate(s));
     assert_near!(part1.front(), curve.evaluate(t));
