@@ -44,7 +44,7 @@ This fork exists to accomplish two main goals:
 Per-crate detail and porting verdicts live in [`TRUCK-PARITY.md`](TRUCK-PARITY.md); upstream commits we hand-ported include SHAs in their commit bodies for attribution.
 
 **Workspace Modernization**
-- All crates renamed `truck-*` -> `monstertruck-*`; `truck-platform` -> `monstertruck-gpu`, `truck-stepio/src/{in,out}` -> `monstertruck-step/src/{load,save}`, `truck-shapeops` -> `monstertruck-solid`.
+- All crates renamed `truck-*` -> `monstertruck-*`; `truck-platform` -> `monstertruck-gpu`, `truck-stepio/src/{in,out}` -> `monstertruck-io/src/step/{load,save}` (via `monstertruck-step`, since retired), `truck-shapeops` -> `monstertruck-solid`.
 - Rust edition 2024, `wgpu` 29, `rand` 0.10, `criterion` 0.8, `gloo` 0.12; `web_time::Instant` for `wasm`.
 - `vtk` dropped from default features over [RUSTSEC-2026-0041](https://rustsec.org/advisories/RUSTSEC-2026-0041.html); opt-in only.
 - Workspace `Cargo.toml` consolidates shared deps; `just` replaces `cargo-make`; GitHub Actions replaces GitLab CI; `fmt --check` runs on nightly so `rustfmt.toml`'s unstable options actually apply.
@@ -83,6 +83,16 @@ Per-crate detail and porting verdicts live in [`TRUCK-PARITY.md`](TRUCK-PARITY.m
 - `SurfaceDerivatives::absolute_derivatives` + `combinatorial_derivative(s)` ported from upstream's `truck-base::ders`, backing the offset surface family.
 - `BasisWindow` active-window B-spline basis evaluation (upstream [`77e25635`](https://github.com/ricosjp/truck/commit/77e25635)), reimplemented with `SmallVec`; both `BsplineCurve` and `BsplineSurface` only touch active control points.
 - STEP face preview tool at [`monstertruck-io/examples/preview-step-face.rs`](monstertruck-io/examples/preview-step-face.rs) for diagnostic visualization -- canonical replacement for ad-hoc `eprintln!`-in-`loops_store` debugging; see [AGENTS.md](AGENTS.md#visual-debugging-for-meshingtrim-bugs).
+
+**I/O and Exchange Formats**
+- All exchange formats consolidated into [`monstertruck-io`](monstertruck-io/), one feature per format, so a caller reaches every format through a single dependency and compiles only what it asks for. `monstertruck-step` remains as a deprecated re-export, so an existing `monstertruck-step = "0.3"` requirement keeps resolving.
+- ISO 10303-21 now parses through [`step-p21`](https://crates.io/crates/step-p21), our published fork of [`ruststep`](https://github.com/ricosjp/ruststep). Two syntax fixes real CAD exports need had sat unreleased on ruststep master for four years: `''` as an escaped apostrophe (which imperial CAD emits as inch marks in thread callouts) and `()` as an empty aggregate. A `[patch.crates-io]` fixes your own build but never your dependents, so shipping them required publishing.
+- IGES 5.3 reading is scaffolded on the [`cadmpeg`](https://github.com/cadmpeg/cadmpeg) codecs behind an `iges` feature. The conversion to B-rep is unwritten and returns a typed `Unimplemented` rather than an empty model -- an importer that silently returns nothing is worse than one that refuses.
+- A second STEP reader sits behind a `cadmpeg` feature alongside ours. Ours stays the default and the measurement baseline; keeping both compiled lets the two be run over one corpus and diffed, so any future swap is a decision with evidence behind it.
+
+**Geometric Continuity**
+- Checked continuity vocabulary in `monstertruck-traits`: `ContinuityOrder` (`G0`--`G4`, with `G4` marked experimental), `BoundarySide` for full tensor-product patch sides, and a capability report carrying a *typed* reason and the highest achievable order rather than a bare boolean.
+- `BsplineSurface::continuity_capability` and `NurbsSurface::continuity_capability` inspect knot vectors, clamping, cross-boundary degree, control rows and the parameter domain. Contributed by [@KTheMan](https://github.com/KTheMan) ([#13](https://github.com/virtualritz/monstertruck/pull/13), [#19](https://github.com/virtualritz/monstertruck/pull/19)).
 
 **Testing Infrastructure**
 - STEP watertightness invariant + boolean-ops-over-STEP-geometry coverage ([issue #91](https://github.com/virtualritz/monstertruck/issues/91)).
@@ -170,7 +180,7 @@ The `monstertruck` kernel is split into independent crates so you only need to p
 
 ![dependencies](./dependencies.svg)
 
-> This graph predates the `monstertruck-fillet` and `monstertruck-healing` extraction and does not show them yet.
+> This graph predates the `monstertruck-fillet` and `monstertruck-healing` extraction and the `monstertruck-io` consolidation, and shows none of them yet.
 
 ## License
 
