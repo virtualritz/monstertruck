@@ -13,7 +13,7 @@ compiles only the formats it asks for.
 | format | feature | default | state |
 | --- | --- | --- | --- |
 | ISO 10303-21 (STEP) | `step` | yes | read and write, ours |
-| IGES 5.3 | `iges` | no | **placeholder, see below** |
+| IGES 5.3 | `iges` | no | read only, and 5.3 only -- see below |
 
 ```rust
 use monstertruck_io::step::load::{*, step_geometry::*};
@@ -40,17 +40,38 @@ monstertruck reads it correctly, and cadmpeg drops the whole
 `MANIFOLD_SOLID_BREP` because one parameter-space `CIRCLE` fails to decode
 (cadmpeg/cadmpeg#79). Writing STEP is ours outright.
 
-## IGES, and why it refuses
+## IGES: the conversion works, the decoder is the limit
 
-The `iges` feature is a **placeholder**. It decodes a real file with a real
-decoder -- [`cadmpeg`](https://github.com/cadmpeg/cadmpeg), which monstertruck
-has no reason to reimplement -- but the last step, turning the recovered
-geometry into monstertruck's B-rep, is unwritten. So it returns
-`Error::Unimplemented` rather than an empty model, and an empty document
-gets its own `Error::NoGeometry`. A caller therefore cannot mistake "not
-written yet" for "this file contained no geometry". An importer that silently
-returns nothing is worse than one that refuses, and
-`tests/refuses_rather_than_returns_nothing.rs` fails the day it stops.
+Decoding is [`cadmpeg`](https://github.com/cadmpeg/cadmpeg)'s, which
+monstertruck has no reason to reimplement. Turning the recovered geometry into
+monstertruck's B-rep is ours, and it is written: see `cadmpeg` for what
+reaches which surface variant, and why analytic carriers stay analytic.
+
+Measured against `cadmpeg_ir::examples::unit_cube` -- cadmpeg's own document,
+not a hand-built one -- a solid body converts to a shell of 8 vertices, 12
+edges and 6 faces that `monstertruck_topology::Shell::extract` accepts and
+reports CLOSED.
+
+### What still stops a real file
+
+**`cadmpeg-codec-iges` 0.4 decodes IGES 5.3 only.** Older exports are refused
+by the decoder before the converter is reached: measured 2026-08-18, an IGES
+4.0 file and an IGES 5.2 file both return `Error::Decode`. So a failure to
+read an IGES file in the wild is more likely the version ceiling than
+anything here, and no work in this crate moves it.
+
+Carriers this crate refuses on its own are refused BY NAME
+(`Error::UnsupportedSurfaceKind`, `Error::UnsupportedCurveKind`): ellipses
+and the other conics, composite curves, periodic NURBS, pole loops, and
+coedge-local edges.
+
+### Nothing is ever silently empty
+
+A caller cannot mistake any failure for "this file contained no geometry". An
+empty document is `Error::NoGeometry`; a body that cannot be represented
+fails the whole call and names itself, because a returned `Vec` cannot report
+that one of its entries was left out. `Ok(vec![])` is unreachable, and
+`tests/refuses_rather_than_returns_nothing.rs` pins that.
 
 Adding a format is cheap because the cadmpeg codecs all decode into ONE
 intermediate representation, `cadmpeg_ir::CadIr`: the per-format work is only
