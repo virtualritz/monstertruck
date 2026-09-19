@@ -55,6 +55,11 @@ where
     }
 
     fn project_boundary_point(&self, point: Point3, hint: Option<f64>) -> Option<(f64, Point2)> {
+        // A boundary is walked from the trim's start. A trim closed in space
+        // but open in parameter space matches its start with both ends, and
+        // an unseeded search can land on the far one, sending every later
+        // projection off the curve. So an absent hint means the start.
+        let hint = hint.or(Some(self.curve().range_tuple().0));
         self.search_parameter(point, hint, 100)
             .or_else(|| self.search_nearest_parameter(point, hint, 100))
             .or_else(|| self.search_parameter(point, None, 100))
