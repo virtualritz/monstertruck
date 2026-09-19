@@ -20,8 +20,8 @@
 #![cfg(feature = "iges")]
 
 use cadmpeg_ir::{CadIr, examples, units::Units};
-use monstertruck_io::cadmpeg::{ImportedBody, to_bodies};
 use monstertruck_io::Error;
+use monstertruck_io::cadmpeg::{ImportedBody, to_bodies};
 use monstertruck_topology::{Shell, shell::ShellCondition};
 
 /// A document with no bodies is a fact about the file, so it keeps its own error.
@@ -65,7 +65,11 @@ fn cadmpegs_own_unit_cube_converts_to_a_closed_solid() {
 
     let shell = &solid.boundaries[0];
     assert_eq!(shell.vertices.len(), 8, "a cube has 8 vertices");
-    assert_eq!(shell.edges.len(), 12, "a cube has 12 edges, each shared by two faces");
+    assert_eq!(
+        shell.edges.len(),
+        12,
+        "a cube has 12 edges, each shared by two faces"
+    );
     assert_eq!(shell.faces.len(), 6, "a cube has 6 faces");
     // V - E + F = 2. Stated separately: the three counts above could each be
     // wrong in a way that still looks plausible, and this is the relation that

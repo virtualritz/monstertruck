@@ -11,8 +11,11 @@ porting rationale, and the boolean-op regression post-mortem, see
 - Merge-base: `9845ce71` (2026-02-12). **Deliberately never advanced** -- we
   hand-port audited commits rather than merge, so the merge-base is only a
   reference point, not a claim of integration.
-- Last survey: upstream `2bbb4bae` (2026-05-29), 136 commits ahead of the
+- Last survey: upstream `efe39930` (2026-08-31), 178 commits ahead of the
   merge-base.
+- Surveying without a configured remote: `git fetch --no-tags
+  https://github.com/ricosjp/truck.git 'refs/heads/master:refs/truck-survey/master'`
+  leaves the objects in place without adding a remote or a tracking branch.
 - Policy: treat upstream as a patch queue, not a branch to merge. A merge or
   broad cherry-pick would reintroduce upstream's `truck-shapeops` boolean-op
   rewrite that we reverted (it regressed `punched_cube`/`adjacent_cubes_or`),
@@ -59,6 +62,8 @@ has diverged beyond upstream.
 - ported -- `BasisWindow` active-window B-spline basis evaluation (`77e25635`), reimplemented with `SmallVec` and our naming; `BsplineCurve`/`BsplineSurface` evaluate only active control points.
 - ported -- offset geometry (`9031e6dd`): `OffsetCurve`, `OffsetSurface`, `NormalOffsetField`, `CurveScalarFunction`, `SurfaceScalarFunction` (renamed from upstream's `Offset`/`NormalField`/`ScalarFunctionD*`).
 - ported -- `UnitCircle::search_{nearest_}parameter` now honors the `hint` across periods (`f563ae53` + `86e4ed75` clippy), including the `v2` delegations.
+- ported -- least-squares fitting for `BsplineCurve` and `BsplineSurface` (`cd368b72` + `8614ce76` + `cc396e38` + `a696134f`): `BsplineCurve::least_square`, `BsplineSurface::least_square`, at upstream's post-`a696134f` shape with our `KnotVector`/`start_index()`/`values()` naming. Both build the banded normal matrix directly from each sample's `BasisWindow` rather than forming the full design matrix.
+- ported -- the shared `gaussian_elimination` helper's zero-multiplier guards and the back-substitution inner-loop bound (`0..size + 1` -> `i..size + 1`), the remainder of `a696134f`. **Not an accuracy fix.** Graded against an exact rational solve of the same float matrix, the median error ratio is 1.000 across banded, dense-Bernstein and normal-matrix families, with the few differences running in both directions. It does move the refuse-versus-answer boundary, always safely -- the new code leaves the diagonals exactly as `echelon` wrote them, so it can turn a wrong answer into a refusal but not the reverse. No input reachable through `try_interpolate` was found to distinguish the two variants. Taken for parity and because it does strictly less arithmetic.
 - ahead -- `rbf_surface` -> `rolling_ball_fillet`, `af_surface` -> `approximate_fillet_surface` (structure and names diverged; do not resurrect `rbf_surface`).
 - ahead -- `KnotVec` -> `KnotVector`, `BSpline*` -> `Bspline*` spelling.
 - ported -- sphere coordinate-singularity guards (pole `0/0`, `point == center`, `acos` clamp) -- `monstertruck`-only hardening, no upstream equivalent.
