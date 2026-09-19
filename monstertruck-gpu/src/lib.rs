@@ -26,6 +26,14 @@
 //! });
 //! ```
 
+// wgpu's `Surface` auto-trait resolution exceeds the default recursion limit of
+// 128, so `cargo clippy --all-targets -- -D warnings` fails here with
+// "overflow evaluating the requirement `wgpu::Surface<'_>: Send`" -- on nightly
+// as the `recursion_depth_exceeding_limit` lint (rust-lang/rust#159228), which
+// is on its way to becoming a hard error. The lint attaches to the whole crate
+// and cannot be silenced per function; raising the limit is what its own help
+// text suggests.
+#![recursion_limit = "256"]
 #![cfg_attr(not(debug_assertions), deny(warnings))]
 #![deny(clippy::all, rust_2018_idioms)]
 #![warn(

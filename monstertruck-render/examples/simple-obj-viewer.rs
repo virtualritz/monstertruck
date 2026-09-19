@@ -1,3 +1,6 @@
+// See the note in src/lib.rs: wgpu overflows the default auto-trait recursion
+// limit, and each example and test target is its own crate.
+#![recursion_limit = "256"]
 //! Simple OBJ viewer
 //!
 //! - Drag the mouse to rotate the model.

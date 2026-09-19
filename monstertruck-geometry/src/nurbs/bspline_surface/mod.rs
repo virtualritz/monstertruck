@@ -72,6 +72,106 @@ impl<P: ControlPoint<f64>> BsplineSurface<P> {
         }
         true
     }
+
+    /// Fits a B-spline surface to `parameter_points` in the least-squares sense.
+    ///
+    /// The surface counterpart of
+    /// [`BsplineCurve::least_square`](crate::prelude::BsplineCurve::least_square).
+    /// It solves the normal equations, so it accepts more samples than control
+    /// points and returns the surface that minimises the sum of squared
+    /// distances.
+    ///
+    /// The normal matrix is indexed by the flattened control grid, so index `i` is
+    /// `u * v_count + v`. Each sample contributes the outer product of its two
+    /// [`BasisWindow`](crate::prelude::BasisWindow) values. Only the upper band is
+    /// walked, because the matrix is symmetric.
+    ///
+    /// # Failures
+    ///
+    /// Returns [`Error::GaussianEliminationFailure`] when the normal matrix is
+    /// singular, which happens when a patch of the control grid carries no
+    /// sample.
+    ///
+    /// # Examples
+    /// ```
+    /// use monstertruck_geometry::prelude::*;
+    ///
+    /// // Fit a saddle from a 10x10 sample grid onto a 4x4 control grid.
+    /// let knots = (KnotVector::uniform_knot(2, 2), KnotVector::uniform_knot(2, 2));
+    /// let mut points = Vec::new();
+    /// for i in 0..10 {
+    ///     for j in 0..10 {
+    ///         let (u, v) = (i as f64 / 9.0, j as f64 / 9.0);
+    ///         points.push(((u, v), Point3::new(u, v, u * u - v * v)));
+    ///     }
+    /// }
+    /// let surface = BsplineSurface::least_square(knots, (2, 2), &points).unwrap();
+    ///
+    /// for ((u, v), p) in &points {
+    ///     assert!(surface.subs(*u, *v).distance(*p) < 0.05);
+    /// }
+    /// ```
+    pub fn least_square(
+        knot_vecs: (KnotVector, KnotVector),
+        degrees: (usize, usize),
+        parameter_points: &[((f64, f64), P)],
+    ) -> Result<Self> {
+        let (uknot_vec, vknot_vec) = knot_vecs;
+        let (udegree, vdegree) = degrees;
+
+        let ucontrol_count = uknot_vec.len() - udegree - 1;
+        let vcontrol_count = vknot_vec.len() - vdegree - 1;
+        let size = ucontrol_count * vcontrol_count;
+        let mut matrix = vec![vec![0.0; size]; size];
+        let mut rhs = vec![P::origin(); size];
+
+        for &((u, v), point) in parameter_points {
+            let ubasis = uknot_vec.bspline_basis_functions(udegree, 0, u);
+            let vbasis = vknot_vec.bspline_basis_functions(vdegree, 0, v);
+            for (local_ui, &ubasis_i) in ubasis.values().iter().enumerate() {
+                for (local_vi, &vbasis_i) in vbasis.values().iter().enumerate() {
+                    let i = (ubasis.start_index() + local_ui) * vcontrol_count
+                        + vbasis.start_index()
+                        + local_vi;
+                    let basis_i = ubasis_i * vbasis_i;
+                    for (local_uj, &ubasis_j) in ubasis.values().iter().enumerate().skip(local_ui) {
+                        // On the diagonal u-block, start v at `local_vi` so the
+                        // pair is visited once. Off it, the whole v range is new.
+                        let vstart = if local_uj == local_ui { local_vi } else { 0 };
+                        for (local_vj, &vbasis_j) in vbasis.values().iter().enumerate().skip(vstart)
+                        {
+                            let j = (ubasis.start_index() + local_uj) * vcontrol_count
+                                + vbasis.start_index()
+                                + local_vj;
+                            let value = basis_i * ubasis_j * vbasis_j;
+                            matrix[i][j] += value;
+                            if i != j {
+                                matrix[j][i] += value;
+                            }
+                        }
+                    }
+                    for d in 0..P::DIM {
+                        rhs[i][d] += basis_i * point[d];
+                    }
+                }
+            }
+        }
+
+        let mut control_points = vec![vec![P::origin(); vcontrol_count]; ucontrol_count];
+        for d in 0..P::DIM {
+            let mut matrix = matrix.clone();
+            for i in 0..size {
+                matrix[i].push(rhs[i][d]);
+            }
+            let ans = gaussian_elimination::gaussian_elimination(&mut matrix)
+                .ok_or(Error::GaussianEliminationFailure)?;
+            for (point, value) in control_points.iter_mut().flatten().zip(ans) {
+                point[d] = value;
+            }
+        }
+
+        Ok(Self::new_unchecked((uknot_vec, vknot_vec), control_points))
+    }
 }
 
 impl<P: ControlPoint<f64> + Tolerance> BsplineSurface<P> {

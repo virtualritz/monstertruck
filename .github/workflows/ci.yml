@@ -43,7 +43,7 @@ jobs:
           # `resources` submodule explicitly below.
           submodules: false
       - run: git submodule update --init resources
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
@@ -61,7 +61,7 @@ jobs:
           # `resources` submodule explicitly below.
           submodules: false
       - run: git submodule update --init resources
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       # Pinned: cargo-rdme's output is not stable across major versions, so an
@@ -85,7 +85,7 @@ jobs:
           # `resources` submodule explicitly below.
           submodules: false
       - run: git submodule update --init resources
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
       - uses: extractions/setup-just@v2
       - run: just meshing-features
@@ -101,7 +101,7 @@ jobs:
           # `resources` submodule explicitly below.
           submodules: false
       - run: git submodule update --init resources
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2

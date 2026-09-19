@@ -101,5 +101,14 @@ monstertruck-topology = { version = "0.4.0", path = "monstertruck-topology" }
 monstertruck-traits = { version = "0.4.0", path = "monstertruck-traits" }
 
 
+# Build scripts and proc-macro crates otherwise compile with full debug info,
+# and cargo NEVER garbage-collects the old ones: every fingerprint change writes
+# a new `target/debug/build/<crate>/<hash>/` and leaves each earlier hash in
+# place, so the directory grows without bound across ordinary builds and CI runs.
+#
+# Nobody debugs a build script, so this costs nothing.
+[profile.dev.build-override]
+debug = false
+
 [profile.release.package.monstertruck-wasm]
 opt-level = "z"

@@ -315,6 +315,92 @@ impl<P: ControlPoint<f64>> BsplineCurve<P> {
     pub fn interpole(knot_vec: KnotVector, parameter_points: impl AsMut<[(f64, P)]>) -> Self {
         Self::interpolate(knot_vec, parameter_points)
     }
+
+    /// Fits a B-spline curve to `parameter_points` in the least-squares sense.
+    ///
+    /// Unlike [`try_interpolate`](Self::try_interpolate), which solves a square
+    /// system and passes through every point, this solves the normal equations.
+    /// So it accepts more points than control points and returns the curve that
+    /// minimises the sum of squared distances. Use it to fit sampled or noisy
+    /// data, where an exact interpolant would oscillate.
+    ///
+    /// The normal matrix is banded, because a B-spline basis function is non-zero
+    /// over `degree + 1` spans only. This builds the band directly from each
+    /// sample's [`BasisWindow`] rather than forming the full design matrix, and
+    /// fills both triangles from one pass because the matrix is symmetric.
+    ///
+    /// # Failures
+    ///
+    /// Returns [`Error::GaussianEliminationFailure`] when the normal matrix is
+    /// singular. That happens when a span carries no sample, so the control point
+    /// governing it is unconstrained.
+    ///
+    /// # Examples
+    /// ```
+    /// use monstertruck_geometry::prelude::*;
+    /// use std::f64::consts::TAU;
+    ///
+    /// // Twenty samples of a circle, fitted by eight control points.
+    /// let knot_vec = KnotVector::uniform_knot(2, 6);
+    /// let points = (0..20)
+    ///     .map(|i| {
+    ///         let t = i as f64 / 19.0;
+    ///         (t, Point2::new(f64::cos(TAU * t), f64::sin(TAU * t)))
+    ///     })
+    ///     .collect::<Vec<_>>();
+    /// let curve = BsplineCurve::least_square(knot_vec, 2, &points).unwrap();
+    ///
+    /// // The fit stays near the samples without passing through each one.
+    /// for (t, p) in &points {
+    ///     assert!(curve.subs(*t).distance(*p) < 0.2);
+    /// }
+    /// ```
+    pub fn least_square(
+        knot_vec: KnotVector,
+        degree: usize,
+        parameter_points: &[(f64, P)],
+    ) -> Result<Self> {
+        let n = knot_vec.len() - degree - 1;
+        let mut matrix = vec![vec![0.0; n]; n];
+        let mut rhs = vec![P::origin(); n];
+        for &(t, point) in parameter_points {
+            let basis = knot_vec.bspline_basis_functions(degree, 0, t);
+            let base = basis.start_index();
+            for (local_i, &basis_i) in basis.values().iter().enumerate() {
+                let i = base + local_i;
+                // Skip to `local_i`: the matrix is symmetric, so one pass over
+                // the upper band fills both triangles.
+                for (local_j, &basis_j) in basis.values().iter().enumerate().skip(local_i) {
+                    let j = base + local_j;
+                    let value = basis_i * basis_j;
+                    matrix[i][j] += value;
+                    if i != j {
+                        matrix[j][i] += value;
+                    }
+                }
+                for d in 0..P::DIM {
+                    rhs[i][d] += basis_i * point[d];
+                }
+            }
+        }
+
+        let mut control_points = vec![P::origin(); n];
+        // One solve per coordinate. The matrix is shared, so it is cloned rather
+        // than rebuilt.
+        for d in 0..P::DIM {
+            let mut matrix = matrix.clone();
+            for i in 0..n {
+                matrix[i].push(rhs[i][d]);
+            }
+            let ans = gaussian_elimination::gaussian_elimination(&mut matrix)
+                .ok_or(Error::GaussianEliminationFailure)?;
+            for (v, a) in control_points.iter_mut().zip(ans) {
+                v[d] = a;
+            }
+        }
+
+        Ok(Self::new_unchecked(knot_vec, control_points))
+    }
 }
 
 impl<P> BsplineCurve<P>

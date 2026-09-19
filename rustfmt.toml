@@ -1,3 +1,13 @@
+# NIGHTLY IS REQUIRED. `fn_single_line` and `where_single_line` below are
+# unstable rustfmt options: nightly applies them, and stable rustfmt SILENTLY
+# IGNORES them and still exits 0. So a stable `cargo fmt` does not just fail to
+# help, it actively formats the tree the wrong way and reports success.
+#
+# `unstable_features = true` makes that requirement explicit rather than
+# implied by the option list, and the pinned toolchain in
+# `rust-toolchain.toml` is what actually enforces it.
+unstable_features = true
+
 fn_single_line = true
 where_single_line = true
 reorder_imports = true
