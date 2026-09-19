@@ -1,6 +1,6 @@
 [package]
 name = "monstertruck-fillet"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Moritz Moeller <virtualritz@protonmail.com>"]
 edition = "2024"
 description = "Rolling-ball fillet operations for solid shell edges"

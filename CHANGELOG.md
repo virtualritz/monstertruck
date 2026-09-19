@@ -12,10 +12,17 @@ the two do not line up -- upstream `truck v0.4` has nothing to do with
 monstertruck 0.4.0.
 
 
-## Unreleased
+## 0.4.1 -- 2026-09-19
 
 ### Added
 
+- **`monstertruck-geometry`: least-squares B-spline fitting.**
+  `BsplineCurve::least_square(knot_vec, degree, &[(t, point), ..])` and
+  `BsplineSurface::least_square((uknots, vknots), (udeg, vdeg), &[((u, v), p), ..])`
+  fit more samples than control points, where `try_interpolate` only passes
+  through every point. Both solve the banded normal equations, and both refuse
+  with `Error::GaussianEliminationFailure` when a span (or a patch of the control
+  grid) carries no sample, since its control point is then unconstrained.
 - **`monstertruck-io`: reading IGES converts, instead of refusing.**
   `cadmpeg::to_bodies` returned `Error::Unimplemented` at 0.4.0; the decoder and
   the API were in place but the intermediate representation never reached a B-rep.
@@ -41,6 +48,17 @@ monstertruck 0.4.0.
   fixture, so the tests build an intermediate representation in memory. They
   verify the mapping; they do not verify `iges::from_path`.
 
+
+### Fixed
+
+- **`monstertruck-meshing`: a trim closed in space no longer folds its face.**
+  A trim that is closed in space but open in parameter space -- a cylinder's
+  circle, `u` from 0 to 2π -- matches its start point with both ends. The
+  aligned-trim boundary projected each edge use's first point with no hint, and
+  for a trim running `u` down from 2π the search could land on the far end. Every
+  later projection then ran off the curve and the face folded over itself. The
+  first projection now starts at the trim's start. Found on a real STEP part
+  tessellated with shared edges: 172 open edges became 0.
 
 ## 0.4.0 -- 2026-08-17
 

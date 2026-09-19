@@ -1,6 +1,6 @@
 [package]
 name = "monstertruck-healing"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Moritz Moeller <virtualritz@protonmail.com>"]
 edition = "2024"
 description = "Shape healing for solids imported from other CAD systems"

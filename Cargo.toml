@@ -81,24 +81,24 @@ wgpu = "29"
 winit = "0.30"
 
 # Internal crates
-monstertruck-assembly = { version = "0.4.0", path = "monstertruck-assembly" }
-monstertruck-core = { version = "0.4.0", path = "monstertruck-core" }
-monstertruck-derive = { version = "0.4.0", path = "monstertruck-derive" }
-monstertruck-fillet = { version = "0.4.0", path = "monstertruck-fillet" }
-monstertruck-geometry = { version = "0.4.0", path = "monstertruck-geometry" }
-monstertruck-healing = { version = "0.4.0", path = "monstertruck-healing" }
+monstertruck-assembly = { version = "0.4.1", path = "monstertruck-assembly" }
+monstertruck-core = { version = "0.4.1", path = "monstertruck-core" }
+monstertruck-derive = { version = "0.4.1", path = "monstertruck-derive" }
+monstertruck-fillet = { version = "0.4.1", path = "monstertruck-fillet" }
+monstertruck-geometry = { version = "0.4.1", path = "monstertruck-geometry" }
+monstertruck-healing = { version = "0.4.1", path = "monstertruck-healing" }
 # `default-features = false` here so each consumer names the formats it wants;
 # a workspace-inherited dependency cannot have this overridden downstream.
-monstertruck-io = { version = "0.4.0", path = "monstertruck-io", default-features = false }
-monstertruck-mesh = { version = "0.4.0", path = "monstertruck-mesh" }
-monstertruck-meshing = { version = "0.4.0", path = "monstertruck-meshing" }
-monstertruck-modeling = { version = "0.4.0", path = "monstertruck-modeling" }
-monstertruck-gpu = { version = "0.4.0", path = "monstertruck-gpu" }
-monstertruck-render = { version = "0.4.0", path = "monstertruck-render" }
-monstertruck-solid = { version = "0.4.0", path = "monstertruck-solid" }
-monstertruck-step = { version = "0.4.0", path = "monstertruck-step" }
-monstertruck-topology = { version = "0.4.0", path = "monstertruck-topology" }
-monstertruck-traits = { version = "0.4.0", path = "monstertruck-traits" }
+monstertruck-io = { version = "0.4.1", path = "monstertruck-io", default-features = false }
+monstertruck-mesh = { version = "0.4.1", path = "monstertruck-mesh" }
+monstertruck-meshing = { version = "0.4.1", path = "monstertruck-meshing" }
+monstertruck-modeling = { version = "0.4.1", path = "monstertruck-modeling" }
+monstertruck-gpu = { version = "0.4.1", path = "monstertruck-gpu" }
+monstertruck-render = { version = "0.4.1", path = "monstertruck-render" }
+monstertruck-solid = { version = "0.4.1", path = "monstertruck-solid" }
+monstertruck-step = { version = "0.4.1", path = "monstertruck-step" }
+monstertruck-topology = { version = "0.4.1", path = "monstertruck-topology" }
+monstertruck-traits = { version = "0.4.1", path = "monstertruck-traits" }
 
 
 # Build scripts and proc-macro crates otherwise compile with full debug info,
