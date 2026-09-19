@@ -1,3 +1,6 @@
+// See the note in src/lib.rs: wgpu overflows the default auto-trait recursion
+// limit, and each test target is its own crate.
+#![recursion_limit = "256"]
 mod common;
 use common::Plane;
 use monstertruck_core::cgmath64::*;

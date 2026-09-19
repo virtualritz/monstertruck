@@ -1,3 +1,9 @@
+// wgpu's `Surface` auto-trait resolution exceeds the default recursion limit of
+// 128, which nightly reports as `recursion_depth_exceeding_limit`
+// (rust-lang/rust#159228) and will eventually be a hard error. The lint attaches
+// to the whole crate and cannot be silenced per function; raising the limit is
+// what its own help text suggests.
+#![recursion_limit = "256"]
 //! Shape and polygon mesh visualization built on `monstertruck-gpu`.
 //!
 //! # Examples

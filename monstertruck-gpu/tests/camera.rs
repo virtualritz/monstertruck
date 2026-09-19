@@ -1,3 +1,6 @@
+// See the note in src/lib.rs: wgpu overflows the default auto-trait recursion
+// limit, and each test target is its own crate.
+#![recursion_limit = "256"]
 #![cfg(not(target_arch = "wasm32"))]
 
 use monstertruck_core::{bounding_box::*, cgmath64::*, prop_assert_near, tolerance::*};

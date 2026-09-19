@@ -1,3 +1,6 @@
+// See the note in src/lib.rs: wgpu overflows the default auto-trait recursion
+// limit, and each example and test target is its own crate.
+#![recursion_limit = "256"]
 //! Benchmark Animation
 //!
 //! In each frame, the NURBS surface is divided into mesh.

@@ -141,17 +141,17 @@ pub fn render_ones<'a, R: 'a + Rendered, I: IntoIterator<Item = &'a R>>(
 }
 
 pub fn nontex_answer_texture(scene: &mut Scene) -> Vec<u8> {
-    let plane = new_plane!("shaders/plane.wgsl", "vs_main", "unicolor");
+    let plane = new_plane!("../shaders/plane.wgsl", "vs_main", "unicolor");
     render_one(scene, &plane)
 }
 
 pub fn random_texture(scene: &mut Scene) -> Vec<u8> {
-    let plane = new_plane!("shaders/plane.wgsl", "vs_main", "random_texture");
+    let plane = new_plane!("../shaders/plane.wgsl", "vs_main", "random_texture");
     render_one(scene, &plane)
 }
 
 pub fn gradation_texture(scene: &mut Scene) -> Vec<u8> {
-    let plane = new_plane!("shaders/plane.wgsl", "vs_main", "gradation_texture");
+    let plane = new_plane!("../shaders/plane.wgsl", "vs_main", "gradation_texture");
     render_one(scene, &plane)
 }
 

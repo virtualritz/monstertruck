@@ -867,6 +867,11 @@ impl<V> SurfaceDerivatives<V> {
         let max_order = self.max_order.min(other.max_order);
         let mut res = SurfaceDerivatives::new(max_order);
         for m in 0..=max_order {
+            // `needless_range_loop` is wrong here: `n` is passed to
+            // `combinatorial_derivative` as a VALUE, not used only to index. The
+            // iterator form would still have to recover it with `enumerate`, and
+            // the bound depends on `m`, so it reads worse and says the same thing.
+            #[allow(clippy::needless_range_loop)]
             for n in 0..=max_order - m {
                 res[m][n] = self.combinatorial_derivative(other, &binomial, m, n);
             }

@@ -1,3 +1,6 @@
+// See the note in src/lib.rs: wgpu overflows the default auto-trait recursion
+// limit, and each example and test target is its own crate.
+#![recursion_limit = "256"]
 //! A sample of creating a render object by implementing "Rendered" in a new structure.
 //!
 //! One can use xyr WGSL shader in the following way:

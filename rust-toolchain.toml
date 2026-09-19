@@ -1,0 +1,22 @@
+# One toolchain for everything: `cargo`, `cargo fmt` and `cargo clippy`, locally
+# and in CI. Before this file the repository was split -- the fmt job ran on
+# nightly and every other job on stable -- and the split was not visible from
+# any single place.
+#
+# Nightly is not a preference here, it is a requirement: `rustfmt.toml` opts
+# into unstable options (`fn_single_line`, `where_single_line`), and STABLE
+# RUSTFMT SILENTLY IGNORES THEM. A stable `cargo fmt` therefore reformats the
+# tree differently and reports success, which is the worst available outcome --
+# a gate that passes while doing the wrong thing.
+#
+# The split also hid a real lint: nightly clippy rejects code that stable
+# clippy accepts, so `cargo clippy -D warnings` passed in CI while failing for
+# anyone running it locally on nightly.
+#
+# `channel = "nightly"` floats deliberately, matching what the fmt job already
+# did with `dtolnay/rust-toolchain@nightly`. Pin it to a dated nightly if a
+# lint or rustfmt change ever breaks the build faster than it can be fixed.
+[toolchain]
+channel = "nightly"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]
