@@ -50,6 +50,19 @@ enum Segment {
     Cubic(f64, f64, f64, f64, f64, f64),
 }
 
+impl Segment {
+    /// The same segment moved `dx` along x, control points included.
+    fn shifted(self, dx: f64) -> Self {
+        match self {
+            Segment::Line(x, y) => Segment::Line(x + dx, y),
+            Segment::Quad(cx, cy, x, y) => Segment::Quad(cx + dx, cy, x + dx, y),
+            Segment::Cubic(c1x, c1y, c2x, c2y, x, y) => {
+                Segment::Cubic(c1x + dx, c1y, c2x + dx, c2y, x + dx, y)
+            }
+        }
+    }
+}
+
 /// Collects glyph outline contours from [`ttf_parser::OutlineBuilder`] callbacks.
 struct ContourCollector {
     contours: Vec<(f64, f64, Vec<Segment>)>,
@@ -248,7 +261,17 @@ struct OffsetContour {
     start_x: f64,
     start_y: f64,
     segments: Vec<Segment>,
-    offset_x: f64,
+}
+
+impl OffsetContour {
+    /// A glyph contour moved `dx` font units along the baseline, every point of it.
+    fn placed(start_x: f64, start_y: f64, segments: Vec<Segment>, dx: f64) -> Self {
+        Self {
+            start_x: start_x + dx,
+            start_y,
+            segments: segments.into_iter().map(|s| s.shifted(dx)).collect(),
+        }
+    }
 }
 
 /// Extracts glyph outlines for an entire text string as a flat set of
@@ -295,12 +318,7 @@ pub fn text_profile(
 
         for (sx, sy, segs) in collector.contours {
             if !is_degenerate_contour(sx, sy, &segs) {
-                contours.push(OffsetContour {
-                    start_x: sx,
-                    start_y: sy,
-                    segments: segs,
-                    offset_x: cursor_x,
-                });
+                contours.push(OffsetContour::placed(sx, sy, segs, cursor_x / scale));
             }
         }
 
@@ -321,7 +339,7 @@ pub fn text_profile(
             .par_iter()
             .map(|c| {
                 contour_to_wire(
-                    c.start_x + c.offset_x / scale,
+                    c.start_x,
                     c.start_y,
                     &c.segments,
                     scale,
@@ -339,7 +357,7 @@ pub fn text_profile(
             .iter()
             .map(|c| {
                 contour_to_wire(
-                    c.start_x + c.offset_x / scale,
+                    c.start_x,
                     c.start_y,
                     &c.segments,
                     scale,
@@ -354,3 +372,6 @@ pub fn text_profile(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod placement_tests;
