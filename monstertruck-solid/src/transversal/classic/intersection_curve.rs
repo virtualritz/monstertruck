@@ -68,6 +68,20 @@ where
     Some(IntersectionCurve::new(surface0, surface1, polyline))
 }
 
+fn without_backtracks(mut polyline: Polyline) -> Polyline {
+    let mut i = 1;
+    while i + 1 < polyline.len() {
+        if polyline[i - 1].near(&polyline[i + 1]) {
+            polyline.remove(i);
+            polyline.remove(i);
+            i = i.saturating_sub(1).max(1);
+        } else {
+            i += 1;
+        }
+    }
+    polyline
+}
+
 type IntersectionTuple<S> = (Polyline, IntersectionCurve<Polyline, S, S>);
 
 /// Marching intersection curves between two trimmed surfaces, keyed by their
@@ -88,6 +102,8 @@ where
     let interferences = polygon0.extract_interference(polygon1);
     construct_polylines(&interferences)
         .into_iter()
+        .map(without_backtracks)
+        .filter(|polyline| polyline.len() >= 2)
         .map(|polyline| {
             let curve =
                 build_intersection_curve(surface0.clone(), surface1.clone(), polyline.clone())?;
