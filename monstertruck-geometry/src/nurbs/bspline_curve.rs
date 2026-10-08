@@ -1162,6 +1162,10 @@ impl<P: ControlPoint<f64> + Tolerance> Cut for BsplineCurve<P> {
                 return bspline;
             }
         };
+        let idx = match idx + 1 < self.knot_vec.len() && t.near(&self.knot_vec[idx + 1]) {
+            true => idx + 1,
+            false => idx,
+        };
         let s = if t.near(&self.knot_vec[idx]) {
             t = self.knot_vec[idx];
             self.knot_vec.multiplicity(idx)
