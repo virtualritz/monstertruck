@@ -30,6 +30,7 @@ mod edge_select;
 #[allow(private_interfaces)]
 mod ops;
 
+mod chain;
 mod convert;
 mod error;
 mod geometry;
