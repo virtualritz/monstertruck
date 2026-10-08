@@ -465,15 +465,96 @@ where
 
 impl<C, S0, S1> ParameterDivision1D for IntersectionCurve<C, S0, S1>
 where
-    C: ParametricCurve3D + BoundedCurve,
+    C: ParametricCurve3D + BoundedCurve + ParameterDivision1D<Point = Point3>,
     S0: ParametricSurface3D + SearchNearestParameter<SurfaceParameter, Point = Point3>,
     S1: ParametricSurface3D + SearchNearestParameter<SurfaceParameter, Point = Point3>,
 {
     type Point = Point3;
-    #[inline(always)]
     fn parameter_division(&self, range: (f64, f64), tol: f64) -> (Vec<f64>, Vec<Point3>) {
-        algo::curve::parameter_division(self, range, tol)
+        follow_leader(self, &self.leader, range, tol)
+            .unwrap_or_else(|| algo::curve::parameter_division(self, range, tol))
     }
+}
+
+fn follow_leader<C, L>(
+    curve: &C,
+    leader: &L,
+    range: (f64, f64),
+    tol: f64,
+) -> Option<(Vec<f64>, Vec<Point3>)>
+where
+    C: ParametricCurve<Point = Point3>,
+    L: ParameterDivision1D<Point = Point3>,
+{
+    let (params, mut points) = leader.parameter_division(range, tol);
+    let last = points.len().checked_sub(1)?;
+    let inner = last.saturating_sub(1);
+    let on_curve = [1, 1 + inner / 2, inner]
+        .into_iter()
+        .filter(|&i| 0 < i && i < last)
+        .all(|i| curve.evaluate(params[i]).distance2(points[i]) < tol * tol);
+    if !on_curve {
+        return None;
+    }
+    points[0] = curve.evaluate(params[0]);
+    points[last] = curve.evaluate(params[last]);
+    Some(thin_division((params, points), tol))
+}
+
+/// Drops division points that lie within half of `tol` of the chord between their neighbours.
+///
+/// The first and last points are always kept, so a division of a straight run keeps two.
+///
+/// # Examples
+///
+/// ```
+/// use monstertruck_geometry::prelude::*;
+/// let params: Vec<f64> = (0..=10).map(f64::from).collect();
+/// let points: Vec<Point3> = params.iter().map(|&t| Point3::new(t, 0.0, 0.0)).collect();
+/// let (params, points) = thin_division((params, points), 1.0e-6);
+/// assert_eq!(params, vec![0.0, 10.0]);
+/// assert_eq!(points.len(), 2);
+/// ```
+pub fn thin_division(
+    (params, points): (Vec<f64>, Vec<Point3>),
+    tol: f64,
+) -> (Vec<f64>, Vec<Point3>) {
+    if points.len() < 3 {
+        return (params, points);
+    }
+    let kept = kept_points(&points, tol / 2.0);
+    (
+        kept.iter().map(|&i| params[i]).collect(),
+        kept.iter().map(|&i| points[i]).collect(),
+    )
+}
+
+fn kept_points(points: &[Point3], tol: f64) -> Vec<usize> {
+    let last = points.len() - 1;
+    let mut keep = vec![false; points.len()];
+    keep[0] = true;
+    keep[last] = true;
+    let mut spans = vec![(0, last)];
+    while let Some((a, b)) = spans.pop() {
+        let (p, q) = (points[a], points[b]);
+        let chord = q - p;
+        let length2 = chord.magnitude2();
+        let off = |r: Point3| match length2 > 0.0 {
+            true => (r - p).cross(chord).magnitude2() / length2,
+            false => (r - p).magnitude2(),
+        };
+        let far = (a + 1..b)
+            .map(|i| (i, off(points[i])))
+            .max_by(|x, y| x.1.total_cmp(&y.1));
+        if let Some((i, d2)) = far
+            && d2 > tol * tol
+        {
+            keep[i] = true;
+            spans.push((a, i));
+            spans.push((i, b));
+        }
+    }
+    (0..points.len()).filter(|&i| keep[i]).collect()
 }
 
 impl<C, S0, S1> Cut for IntersectionCurve<C, S0, S1>
@@ -634,16 +715,16 @@ where
 
 impl<C, S0, S1, T0, T1> ParameterDivision1D for SurfaceCurve<C, S0, S1, T0, T1>
 where
-    C: ParametricCurve3D + BoundedCurve,
+    C: ParametricCurve3D + BoundedCurve + ParameterDivision1D<Point = Point3>,
     S0: ParametricSurface3D + SearchNearestParameter<SurfaceParameter, Point = Point3> + Clone,
     S1: ParametricSurface3D + SearchNearestParameter<SurfaceParameter, Point = Point3> + Clone,
     T0: Clone,
     T1: Clone,
 {
     type Point = Point3;
-    #[inline(always)]
     fn parameter_division(&self, range: (f64, f64), tol: f64) -> (Vec<f64>, Vec<Point3>) {
-        algo::curve::parameter_division(self, range, tol)
+        follow_leader(self, &self.leader, range, tol)
+            .unwrap_or_else(|| algo::curve::parameter_division(self, range, tol))
     }
 }
 

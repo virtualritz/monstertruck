@@ -507,6 +507,7 @@ mod edge_blend;
 mod extruded_curve;
 mod homotopy;
 mod intersection_curve;
+pub use intersection_curve::thin_division;
 mod offset;
 mod pcurve;
 mod processor;

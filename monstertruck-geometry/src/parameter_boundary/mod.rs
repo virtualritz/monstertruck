@@ -723,7 +723,7 @@ where
 
 impl<C, S0, S1, T0, T1, S> ParameterBoundary2D<S> for SurfaceCurve<C, S0, S1, T0, T1>
 where
-    C: ParametricCurve3D + BoundedCurve,
+    C: ParametricCurve3D + BoundedCurve + ParameterDivision1D<Point = Point3>,
     S0: ParametricSurface3D
         + SearchNearestParameter<SurfaceParameter, Point = Point3>
         + PartialEq<S>,
