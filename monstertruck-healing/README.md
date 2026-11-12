@@ -6,7 +6,8 @@ Shape healing for solids imported from other CAD systems.
 
 The compressed-shell repair passes that turn a loaded B-rep into something a
 boolean kernel can work with: closed-edge and closed-face splitting, seam
-stripping, pass-through-edge dedup and shell orientation normalization.
+stripping, pass-through-edge dedup, shell orientation normalization and
+conservative naked-edge welding.
 
 These passes are POST-CSG and kernel-independent -- nothing here references a
 boolean backend, which is why the crate sits below both the published
