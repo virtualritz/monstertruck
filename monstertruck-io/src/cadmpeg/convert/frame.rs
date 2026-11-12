@@ -10,12 +10,11 @@
 //! [`Processor`]: monstertruck_geometry::prelude::Processor
 //! [`Plane`]: monstertruck_modeling::Plane
 
+use cadmpeg_ir::features::FinitePoint3;
 use cadmpeg_ir::math::{Point3 as IrPoint3, Vector3 as IrVector3};
 use cadmpeg_ir::transform::Transform as IrTransform;
+use cadmpeg_ir::units::OrthonormalFrame3;
 use monstertruck_modeling::{InnerSpace, Matrix4, Point3, Vector3};
-
-use super::Context;
-use crate::Result;
 
 /// Coordinates as monstertruck spells them.
 ///
@@ -23,18 +22,24 @@ use crate::Result;
 /// factor to apply here -- see the module note on [`crate::cadmpeg`].
 pub(super) fn point(value: &IrPoint3) -> Point3 { Point3::new(value.x, value.y, value.z) }
 
+/// An admitted (finite) intermediate-representation point.
+pub(super) fn finite_point(value: FinitePoint3) -> Point3 { point(&value.get()) }
+
 /// A direction as monstertruck spells it, not yet normalised.
 pub(super) fn vector(value: &IrVector3) -> Vector3 { Vector3::new(value.x, value.y, value.z) }
 
 /// A row-major intermediate-representation transform as a column-major
 /// [`Matrix4`].
 ///
-/// `Transform::rows[i][j]` is row `i`, column `j`; [`Matrix4::from_cols`] wants
-/// columns. Getting this backwards transposes every placement, which for a rigid
-/// motion inverts the rotation and leaves the translation in the wrong row -- so
-/// it is not the kind of mistake that shows up as a small error.
+/// `Transform::rows()[i][j]` is row `i`, column `j`; [`Matrix4::from_cols`]
+/// wants columns. Getting this backwards transposes every placement, which for a
+/// rigid motion inverts the rotation and leaves the translation in the wrong row
+/// -- so it is not the kind of mistake that shows up as a small error.
+///
+/// Since cadmpeg 0.6 a `Transform` is affine by construction (its bottom row is
+/// a fact of the type, not stored), so there is no projective case to refuse.
 pub(super) fn matrix(value: &IrTransform) -> Matrix4 {
-    let rows = &value.rows;
+    let rows = value.rows();
     let column = |index: usize| {
         monstertruck_modeling::Vector4::new(
             rows[0][index],
@@ -81,53 +86,24 @@ impl Frame {
     }
 }
 
-/// Build a frame, refusing rather than guessing when the source directions do
-/// not define one.
+/// The placement of an analytic carrier.
 ///
-/// Two things are checked, and both are real in exported files:
+/// Since cadmpeg 0.6 every analytic carrier holds an [`OrthonormalFrame3`],
+/// which the type admits only when the axis and the reference are unit length
+/// and perpendicular to `1e-9`. The zero-length and parallel-reference cases
+/// this module used to refuse are therefore unrepresentable, and building a
+/// frame cannot fail.
 ///
-/// * a zero-length axis or reference, which no amount of normalising fixes;
-/// * a reference direction PARALLEL to the axis, which leaves the azimuth
-///   undetermined.
-///
-/// The reference direction is projected perpendicular to the axis rather than
-/// used as given. Exporters are entitled to emit a reference that is only
-/// approximately perpendicular, and Gram-Schmidt against the axis is what STEP's
-/// own `axis2_placement_3d` semantics prescribe.
-pub(super) fn frame(
-    origin: &IrPoint3,
-    axis: &IrVector3,
-    reference: &IrVector3,
-    what: &str,
-    context: &Context<'_>,
-) -> Result<Frame> {
-    let axis = vector(axis);
-    let reference = vector(reference);
-    if !axis.magnitude2().is_finite() || axis.magnitude2() <= 0.0 {
-        return Err(context.malformed(format!("{what} has a zero-length or non-finite axis")));
-    }
-    let axis = axis.normalize();
-    let radial = reference - axis * axis.dot(reference);
-    if !radial.magnitude2().is_finite() || radial.magnitude2() <= 0.0 {
-        return Err(context.malformed(format!(
-            "{what} has a reference direction parallel to its axis, so its zero azimuth is \
-             undetermined"
-        )));
-    }
-    Ok(Frame {
-        origin: point(origin),
+/// The reference is still projected perpendicular to the axis and both are
+/// renormalised. That costs nothing and removes the `1e-9` admission slack, so
+/// the placement matrix below is orthonormal to rounding rather than to the
+/// source's tolerance.
+pub(super) fn frame(origin: FinitePoint3, frame: &OrthonormalFrame3) -> Frame {
+    let axis = vector(frame.axis().as_raw()).normalize();
+    let reference = vector(frame.reference().as_raw());
+    Frame {
+        origin: finite_point(origin),
         axis,
-        reference: radial.normalize(),
-    })
-}
-
-/// A frame for a carrier described by a normal and an in-plane direction, which
-/// is how the intermediate representation spells a plane.
-pub(super) fn plane_frame(
-    origin: &IrPoint3,
-    normal: &IrVector3,
-    u_axis: &IrVector3,
-    context: &Context<'_>,
-) -> Result<Frame> {
-    frame(origin, normal, u_axis, "plane", context)
+        reference: (reference - axis * axis.dot(reference)).normalize(),
+    }
 }
