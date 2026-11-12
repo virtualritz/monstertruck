@@ -9,7 +9,7 @@
 //! | format | feature | default | state |
 //! | --- | --- | --- | --- |
 //! | ISO 10303-21 (STEP) | `step` | yes | read and write, ours |
-//! | IGES 5.3 | `iges` | no | read only, and 5.3 only -- see below |
+//! | IGES 4.0 to 5.3 | `iges` | no | read only, through cadmpeg -- see below |
 //!
 //! ```
 //! use monstertruck_io::step::load::{*, step_geometry::*};
@@ -50,16 +50,17 @@
 //!
 //! ## What still stops a real file
 //!
-//! **`cadmpeg-codec-iges` 0.4 decodes IGES 5.3 only.** Older exports are refused
-//! by the decoder before the converter is reached: measured 2026-08-18, an IGES
-//! 4.0 file and an IGES 5.2 file both return [`Error::Decode`]. So a failure to
-//! read an IGES file in the wild is more likely the version ceiling than
-//! anything here, and no work in this crate moves it.
+//! **`cadmpeg-codec-iges` 0.6 decodes fixed-format ASCII IGES 4.0 to 5.3.** The
+//! 0.4 and 0.5 releases read 5.3 and then 5.1 to 5.3 only, and refused older
+//! exports before the converter was reached.
 //!
 //! Carriers this crate refuses on its own are refused BY NAME
 //! ([`Error::UnsupportedSurfaceKind`], [`Error::UnsupportedCurveKind`]): ellipses
-//! and the other conics, composite curves, periodic NURBS, pole loops, and
-//! coedge-local edges.
+//! and the other conics, composite curves, procedural carriers without an exact
+//! solved cache, pole loops, and coedge-local edges. Periodic and unclamped NURBS
+//! convert exactly since 0.6.
+//! What the DECODER dropped reaches the caller in
+//! [`cadmpeg::Import::losses`](crate::cadmpeg::Import).
 //!
 //! ## Nothing is ever silently empty
 //!

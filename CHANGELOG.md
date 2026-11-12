@@ -12,6 +12,39 @@ the two do not line up -- upstream `truck v0.4` has nothing to do with
 monstertruck 0.4.0.
 
 
+## Unreleased
+
+### Added
+
+- **`monstertruck-healing`: conservative naked-edge welding.**
+  `snap_naked_edges` welds singly used edge pairs from distinct faces whose end
+  vertices correspond and whose curves are proven to stay within the tolerance.
+  A pair becomes one shared edge and its matching vertices merge; face order,
+  surfaces and orientation flags are untouched, unmatched edges stay naked, and
+  every pair left naked is reported with its reason (`SnapReport`,
+  `SkipReason`). The pass is transactional, deterministic, an exact no-op at
+  tolerance zero, and never moves anything farther than the tolerance. Curve
+  agreement is a certified bound from each curve's exact homogeneous B-spline
+  form, not a sample.
+
+- **`monstertruck-io`: the cadmpeg bridge is ported to 0.6.11, for STEP and
+  IGES.** The port covers the 0.6 product structure and assembly instancing (a
+  body is emitted once per placed occurrence, at its world placement), decoder
+  losses on a successful decode (`Import::losses`, with the report's provenance),
+  signed sphere and torus radii, `normal_reversed` nets, periodic and unclamped
+  knot vectors, and exact procedural caches.
+
+  It also fixes two silent orientation defects: a face whose sense is reversed
+  now has its stored boundary reversed with it, so it no longer reaches the
+  kernel wound against its own normal; and a negative-determinant placement
+  flips every face flag, so mirrored bodies are no longer inside out. A singular
+  placement is refused by name instead of panicking downstream, and a closed
+  circular edge is converted as an exact four-arc rational NURBS.
+
+  The end-to-end path from bytes is covered: every in-repo STEP fixture is
+  decoded AND converted (with its refusal census pinned), and the IGES fixtures
+  are read through `iges::from_path`.
+
 ## 0.4.1 -- 2026-09-19
 
 ### Added

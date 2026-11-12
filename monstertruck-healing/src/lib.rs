@@ -2,7 +2,8 @@
 //!
 //! The compressed-shell repair passes that turn a loaded B-rep into something a
 //! boolean kernel can work with: closed-edge and closed-face splitting, seam
-//! stripping, pass-through-edge dedup and shell orientation normalization.
+//! stripping, pass-through-edge dedup, shell orientation normalization and
+//! conservative naked-edge welding.
 //!
 //! These passes are POST-CSG and kernel-independent -- nothing here references a
 //! boolean backend, which is why the crate sits below both the published
@@ -43,6 +44,9 @@ type Shell<P, C, S> = CompressedShell<P, C, S>;
 
 trait SP<S>: Fn(&S, Point3, Option<(f64, f64)>) -> Option<(f64, f64)> {}
 impl<S, F> SP<S> for F where F: Fn(&S, Point3, Option<(f64, f64)>) -> Option<(f64, f64)> {}
+
+mod naked_edge_weld;
+pub use naked_edge_weld::{SkipReason, SnapError, SnapReport, snap_naked_edges};
 
 mod split_closed_edges;
 use split_closed_edges::{split_closed_edges, split_closed_edges_trimmed};

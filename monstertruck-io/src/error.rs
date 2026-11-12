@@ -75,6 +75,21 @@ pub enum Error {
         kind: &'static str,
     },
 
+    /// A placement in the product structure cannot be applied.
+    ///
+    /// Distinct from [`Error::UnsupportedBodyKind`]: the body kind is fine and
+    /// it is the OCCURRENCE's placement that is refused, either because a
+    /// per-axis scale has no defined composition order or because the composed
+    /// matrix is singular. A caller matching on body kind must not be told an
+    /// occurrence problem is a body-kind problem.
+    #[error("{format} carried an occurrence placement that cannot be applied: {kind}")]
+    UnplaceableOccurrence {
+        /// Which format was being read.
+        format: &'static str,
+        /// The stable refusal word.
+        kind: &'static str,
+    },
+
     /// A reference in the decoded graph named an entity the document lacks.
     ///
     /// The intermediate representation is a table of entities that refer to each

@@ -19,7 +19,11 @@
 
 #![cfg(feature = "iges")]
 
-use cadmpeg_ir::{CadIr, examples, units::Units};
+use cadmpeg_ir::geometry::analytic::PlaneSurface;
+use cadmpeg_ir::geometry::{SolvedSurfaceGeometry, SurfaceGeometry};
+use cadmpeg_ir::math::Vector3 as IrVector3;
+use cadmpeg_ir::topology::Sense;
+use cadmpeg_ir::{CadIr, examples};
 use monstertruck_io::Error;
 use monstertruck_io::cadmpeg::{ImportedBody, to_bodies};
 use monstertruck_topology::{Shell, shell::ShellCondition};
@@ -30,7 +34,7 @@ use monstertruck_topology::{Shell, shell::ShellCondition};
 /// empty file and a converted-to-nothing file would then be indistinguishable.
 #[test]
 fn an_empty_document_reports_no_geometry_rather_than_an_empty_list() {
-    let ir = CadIr::empty(Units::default());
+    let ir = CadIr::empty();
     match to_bodies(&ir, "IGES") {
         Err(Error::NoGeometry { format }) => assert_eq!(format, "IGES"),
         other => panic!("expected NoGeometry, got {other:?}"),
@@ -52,7 +56,7 @@ fn an_empty_document_reports_no_geometry_rather_than_an_empty_list() {
 /// 1 and fails every line below it.
 #[test]
 fn cadmpegs_own_unit_cube_converts_to_a_closed_solid() {
-    let ir = examples::unit_cube();
+    let ir = examples::unit_cube().expect("cadmpeg's own example document builds");
     assert!(!ir.model.bodies.is_empty(), "the example must carry a body");
 
     let bodies = to_bodies(&ir, "IGES").expect("cadmpeg's unit cube must convert");
@@ -90,6 +94,57 @@ fn cadmpegs_own_unit_cube_converts_to_a_closed_solid() {
     );
 }
 
+/// The review's F1 gate: a face stated through the OTHER chart -- its plane
+/// normal negated and its sense reversed, the same solid written the other way
+/// -- must still extract to a CLOSED shell. The stored boundary has to be in the
+/// converted surface's natural sense, or the two reversals do not compose back
+/// to the source's face-sense loop and the shared edges are traversed the same
+/// way by both faces.
+#[test]
+fn a_reversed_face_sense_still_extracts_closed() {
+    let mut ir = examples::unit_cube().expect("cadmpeg's own example document builds");
+    let face_index = ir
+        .model
+        .faces
+        .iter()
+        .position(|face| face.name.as_deref() == Some("bottom face"))
+        .expect("the example names its bottom face");
+    let surface_id = ir.model.faces[face_index].surface.clone();
+    let surface_index = ir
+        .model
+        .surfaces
+        .iter()
+        .position(|surface| surface.id == surface_id)
+        .expect("the face names a surface it has");
+    let SurfaceGeometry::Solved(SolvedSurfaceGeometry::Plane(plane)) =
+        &ir.model.surfaces[surface_index].geometry
+    else {
+        panic!("the example's faces are planes");
+    };
+    let axis = plane.frame().axis().as_raw();
+    let flipped = PlaneSurface::try_new(
+        plane.origin().get(),
+        IrVector3::new(-axis.x, -axis.y, -axis.z),
+        *plane.frame().reference().as_raw(),
+    )
+    .expect("the negated axis is still perpendicular to the reference");
+    ir.model.surfaces[surface_index].geometry =
+        SurfaceGeometry::Solved(SolvedSurfaceGeometry::Plane(flipped));
+    ir.model.faces[face_index].sense = Sense::Reversed;
+
+    let bodies = to_bodies(&ir, "STEP").expect("the same cube, stated the other way, converts");
+    let ImportedBody::Solid(solid) = &bodies[0] else {
+        panic!("a cube is a solid");
+    };
+    let extracted = Shell::extract(solid.boundaries[0].clone())
+        .expect("the mixed-sense cube must still extract");
+    assert_eq!(
+        extracted.shell_condition(),
+        ShellCondition::Closed,
+        "a mixed-sense cube that is not Closed has a boundary wound against its own face"
+    );
+}
+
 /// Success must remain distinguishable from "nothing found".
 ///
 /// `to_bodies` returning `Ok(vec![])` should be unreachable -- an empty document
@@ -99,8 +154,11 @@ fn cadmpegs_own_unit_cube_converts_to_a_closed_solid() {
 #[test]
 fn no_input_produces_an_empty_ok() {
     for (name, ir) in [
-        ("empty", CadIr::empty(Units::default())),
-        ("unit cube", examples::unit_cube()),
+        ("empty", CadIr::empty()),
+        (
+            "unit cube",
+            examples::unit_cube().expect("cadmpeg's own example document builds"),
+        ),
     ] {
         if let Ok(bodies) = to_bodies(&ir, "IGES") {
             assert!(

@@ -28,46 +28,127 @@
 //! builder refuses to net is a carrier whose analytic form is not admissible, and
 //! the probe is the predicate rather than a copy of it. One throwaway net per
 //! analytic surface is the price, and it cannot drift.
+//!
+//! # Which way the converted surface faces
+//!
+//! A face's sense in the intermediate representation is relative to its
+//! carrier's ORIENTED normal, and since cadmpeg 0.6 that is not always the
+//! natural normal `Su x Sv` of the carrier's own chart. Two carriers state it
+//! differently, and the compiler sees neither:
+//!
+//! * a NURBS net carries `normal_reversed`: when set, the oriented normal is
+//!   `-(Pu x Pv)`. The Parasolid-backed codecs set it.
+//! * a sphere's radius is SIGNED. A negative radius evaluates the same point
+//!   set through the antipodal chart, whose `Su x Sv` points INTO the sphere.
+//!   A torus's tube radius is signed too, but there the sign shifts the tube
+//!   angle by half a turn and leaves `Su x Sv` pointing out of the tube, so it
+//!   does not flip. Both facts are cadmpeg's own: they are what its STEP writer
+//!   records as `WrittenChart::reverses_normal` when it writes such a carrier
+//!   with a positive radius.
+//!
+//! So [`convert`] returns the surface together with whether its natural normal
+//! OPPOSES the carrier's oriented normal, and the topology layer folds that into
+//! the face's orientation exactly once. Pre-inverting the surface instead would
+//! work for a plane and silently break the analytic sphere, whose `Processor`
+//! inversion swaps its parameters.
 
-use cadmpeg_ir::geometry::{NurbsSurface as IrNurbsSurface, SurfaceGeometry};
+use cadmpeg_ir::geometry::nurbs::NurbsSurface as IrNurbsSurface;
+use cadmpeg_ir::geometry::{SolvedSurfaceGeometry, SurfaceGeometry};
+use monstertruck_core::cgmath64::control_point::ControlPoint;
 use monstertruck_geometry::prelude::{
-    BsplineSurface, KnotVector, NurbsSurface, Processor, RevolutionSurface, Sphere, Torus,
-    TryIntoHomogeneousBsplineSurface,
+    BsplineSurface, Invertible, KnotVector, NurbsSurface, Processor, RevolutionSurface, Sphere,
+    Tolerance, Torus, TryIntoHomogeneousBsplineSurface,
 };
 use monstertruck_modeling::{
-    Curve, EuclideanSpace, Line, Plane, Point3, Surface, Transformed, Vector4,
+    Curve, Line, Plane, Point3, SquareMatrix, Surface, Transformed, Vector4,
 };
 
 use super::{Context, frame};
 use crate::Result;
 
+/// A converted carrier and how it faces relative to the source.
+#[derive(Debug, Clone)]
+pub(super) struct Oriented {
+    /// The monstertruck surface.
+    pub(super) surface: Surface,
+    /// Whether `surface`'s natural normal is OPPOSITE the source carrier's
+    /// oriented normal. The face's orientation must absorb this.
+    pub(super) reversed: bool,
+}
+
+impl Oriented {
+    fn forward(surface: Surface) -> Self {
+        Self {
+            surface,
+            reversed: false,
+        }
+    }
+}
+
 /// Convert one surface carrier.
-pub(super) fn convert(geometry: &SurfaceGeometry, context: &Context<'_>) -> Result<Surface> {
+///
+/// # Procedural carriers
+///
+/// Since cadmpeg 0.6 a carrier the source defines by a construction (a
+/// revolution, an extrusion, an offset) is `Procedural`, optionally with the
+/// solved carrier the source retained as its cache. The representation
+/// evaluates such a carrier THROUGH its cache (`SurfaceGeometry::solved`), so
+/// the cache is the carrier as far as every reader is concerned, and the
+/// face's sense is relative to it.
+///
+/// A cache is admitted only when the construction states NO cache fit
+/// tolerance, which is the representation's way of saying the cache is the
+/// construction exactly rather than a fit to it; a NURBS cache that carries its
+/// own fit tolerance is refused below in `nurbs`.
+///
+/// This arm is a POLICY for codecs that emit exact procedural caches, not a
+/// measured rescue. Neither shipped decoder reaches it as of cadmpeg 0.6.11:
+/// the IGES codec emits an entity 120 revolution as `Solved(Nurbs)` when its
+/// generatrix is a NURBS, and as `Procedural { cache: None }` otherwise, and the
+/// STEP codec emits `cache: Some` only from its test support. The 20
+/// robot-rodney sheets the bridge refuses are the `cache: None` arm, not a
+/// cache this code admits, and the 0.5-to-0.6.11 move went from 641 of 666
+/// converted bodies to 621 of 641 rather than from 0.
+///
+/// A procedural carrier with NO cache would have to be replayed, and one with a
+/// FITTED cache is an approximation; both are refused by name.
+pub(super) fn convert(geometry: &SurfaceGeometry, context: &Context<'_>) -> Result<Oriented> {
     match geometry {
-        SurfaceGeometry::Plane {
-            origin,
-            normal,
-            u_axis,
+        SurfaceGeometry::Solved(solved) => solved_surface(solved, context),
+        SurfaceGeometry::Procedural {
+            construction,
+            cache: Some(cache),
         } => {
-            let frame = frame::plane_frame(origin, normal, u_axis, context)?;
+            let construction = context.procedural_surface(construction.as_str())?;
+            if construction.cache_fit_tolerance().is_some() {
+                return Err(unsupported("procedural (fitted cache)", context));
+            }
+            solved_surface(cache, context)
+        }
+        SurfaceGeometry::Procedural { cache: None, .. } => {
+            Err(unsupported("procedural (no solved cache)", context))
+        }
+    }
+}
+
+fn solved_surface(geometry: &SolvedSurfaceGeometry, context: &Context<'_>) -> Result<Oriented> {
+    match geometry {
+        SolvedSurfaceGeometry::Plane(plane) => {
+            let frame = frame::frame(plane.origin(), plane.frame());
             // Three points, not a normal: `Plane` stores its own u and v axes, and
             // taking v as `axis x u` keeps the plane's normal equal to the source
             // normal. Swapping the two would flip every face on it.
-            Ok(Surface::Plane(Plane::new(
+            Ok(Oriented::forward(Surface::Plane(Plane::new(
                 frame.origin,
                 frame.origin + frame.reference,
                 frame.origin + frame.co_reference(),
-            )))
+            ))))
         }
 
-        SurfaceGeometry::Cylinder {
-            origin,
-            axis,
-            ref_direction,
-            radius,
-        } => {
-            let frame = frame::frame(origin, axis, ref_direction, "cylinder", context)?;
-            let radius = finite_radius(*radius, "cylinder", context)?;
+        SolvedSurfaceGeometry::Cylinder(cylinder) => {
+            let frame = frame::frame(cylinder.origin(), cylinder.frame());
+            // Positive by type (`PositiveLength`).
+            let radius = cylinder.radius().get();
             // A cylinder is a line at distance `radius` from the axis, revolved.
             // The profile is UNIT length: the surface is unbounded along its axis
             // and the profile's own range is incidental, which is exactly what
@@ -75,29 +156,30 @@ pub(super) fn convert(geometry: &SurfaceGeometry, context: &Context<'_>) -> Resu
             // real extent pass the face's trim rectangle to
             // `try_into_homogeneous_bspline_surface_over`.
             let base = frame.origin + frame.reference * radius;
-            revolution(Line(base, base + frame.axis), frame)
+            Ok(Oriented::forward(revolution(
+                Line(base, base + frame.axis),
+                frame,
+            )))
         }
 
-        SurfaceGeometry::Cone {
-            origin,
-            axis,
-            ref_direction,
-            radius,
-            ratio,
-            half_angle,
-        } => {
+        SolvedSurfaceGeometry::Cone(cone) => {
             // An ELLIPTICAL cone is not a surface of revolution, so it has no
             // `RevolutionSurface` form and no other exact one either. Refused by
             // name rather than silently converted into the circular cone that
             // `ratio == 1` would have meant.
+            let ratio = cone.ratio().get();
             if (ratio - 1.0).abs() > f64::EPSILON.sqrt() {
-                return Err(crate::Error::UnsupportedSurfaceKind {
-                    format: context.format,
-                    kind: "elliptical cone",
-                });
+                return Err(unsupported("elliptical cone", context));
             }
-            let frame = frame::frame(origin, axis, ref_direction, "cone", context)?;
-            let radius = finite_radius(*radius, "cone", context)?;
+            let frame = frame::frame(cone.origin(), cone.frame());
+            // Nonnegative by type. ZERO is admitted since cadmpeg 0.6 and is a
+            // cone posed at its apex: the profile below then starts ON the axis,
+            // which is the same line the representation evaluates.
+            let radius = cone.radius().get();
+            let half_angle = cone.half_angle().get();
+            // The representation's chart is `radius + v * tan(half_angle)` at
+            // signed axial distance `v`, for EVERY finite angle, so the profile
+            // follows that formula and no sign is normalised away.
             let taper = half_angle.tan();
             if !taper.is_finite() {
                 return Err(context.malformed(format!(
@@ -107,91 +189,118 @@ pub(super) fn convert(geometry: &SurfaceGeometry, context: &Context<'_>) -> Resu
             }
             let base = frame.origin + frame.reference * radius;
             let apex_ward = frame.axis + frame.reference * taper;
-            revolution(Line(base, base + apex_ward), frame)
+            Ok(Oriented::forward(revolution(
+                Line(base, base + apex_ward),
+                frame,
+            )))
         }
 
-        SurfaceGeometry::Sphere { center, radius, .. } => {
-            // `axis` and `ref_direction` are deliberately dropped. They fix the
-            // sphere's parameterization, not its point set, and a sphere's point
-            // set is invariant under rotation about its own centre. Nothing
-            // downstream reads the intermediate representation's parameter-space
-            // curves -- `CompressedFace` has nowhere to store them and every
-            // consumer re-derives (u, v) by projecting the 3D boundary -- so any
-            // valid parameterization of the right point set is the right answer.
-            // Keeping the source frame instead would cost a `Processor` transform
-            // on every sphere and buy nothing.
-            let radius = finite_radius(*radius, "sphere", context)?;
-            let sphere = Processor::new(Sphere::new(frame::point(center), radius));
-            admissible(&sphere, "sphere", context)?;
-            Ok(Surface::SphericalSurface(sphere))
+        SolvedSurfaceGeometry::Sphere(sphere) => {
+            // The frame is deliberately dropped. It fixes the sphere's
+            // parameterization, not its point set, and a sphere's point set is
+            // invariant under rotation about its own centre. Nothing downstream
+            // reads the representation's parameter-space curves --
+            // `CompressedFace` has nowhere to store them and every consumer
+            // re-derives (u, v) by projecting the 3D boundary -- so any valid
+            // parameterization of the right point set is the right answer.
+            //
+            // The radius is SIGNED (`NonZeroLength`). A negative radius is the
+            // same point set as its magnitude, reached through the antipodal
+            // chart, whose natural normal points inward: see the module note.
+            // The magnitude builds the sphere and the sign becomes `reversed`.
+            let signed = sphere.radius().get();
+            let analytic = Processor::new(Sphere::new(
+                frame::finite_point(sphere.center()),
+                signed.abs(),
+            ));
+            admissible(&analytic, "sphere", context)?;
+            Ok(Oriented {
+                surface: Surface::SphericalSurface(analytic),
+                reversed: signed < 0.0,
+            })
         }
 
-        SurfaceGeometry::Torus {
-            center,
-            axis,
-            ref_direction,
-            major_radius,
-            minor_radius,
-        } => {
+        SolvedSurfaceGeometry::Torus(torus) => {
             // Unlike a sphere, a torus's point set DOES depend on its axis, so
             // the frame is carried in the `Processor`'s transform and the entity
             // stays canonical.
-            let frame = frame::frame(center, axis, ref_direction, "torus", context)?;
-            let major = finite_radius(*major_radius, "torus major radius", context)?;
-            let minor = finite_radius(*minor_radius, "torus minor radius", context)?;
-            // `Torus::new` PANICS on a non-positive radius. `finite_radius` has
-            // already refused those, so this call cannot reach the panic -- which
-            // is the point of checking here rather than trusting the file.
-            let torus = Processor::with_transform(
-                Torus::new(Point3::origin(), major, minor),
+            let frame = frame::frame(torus.center(), torus.frame());
+            let major = torus.major_radius().get();
+            // SIGNED since cadmpeg 0.6 (`NonZeroLength`). A negative tube radius
+            // is the same point set as its magnitude with the tube angle shifted
+            // by half a turn, and its natural normal still points out of the
+            // tube -- see the module note -- so the magnitude is the whole
+            // mapping and nothing flips.
+            let minor = torus.minor_radius().get().abs();
+            // `Torus::new` PANICS on a non-positive radius. Both magnitudes are
+            // positive by type, so this call cannot reach the panic.
+            let analytic = Processor::with_transform(
+                Torus::new(Point3::new(0.0, 0.0, 0.0), major, minor),
                 frame.placement(1.0),
             );
-            admissible(&torus, "torus", context)?;
-            Ok(Surface::ToroidalSurface(torus))
+            admissible(&analytic, "torus", context)?;
+            Ok(Oriented::forward(Surface::ToroidalSurface(analytic)))
         }
 
-        SurfaceGeometry::Nurbs(surface) => nurbs(surface, context),
+        SolvedSurfaceGeometry::Nurbs(surface) => nurbs(surface, context),
 
-        SurfaceGeometry::Transformed { basis, transform } => {
-            let mut surface = convert(basis, context)?;
-            if !transform.is_affine() {
-                return Err(context
-                    .malformed("a transformed surface carries a non-affine placement".to_owned()));
+        SolvedSurfaceGeometry::Transformed(placed) => {
+            let matrix = frame::matrix(placed.transform());
+            let determinant = matrix.determinant();
+            if !determinant.is_finite() || determinant == 0.0 {
+                return Err(crate::Error::UnplaceableOccurrence {
+                    format: context.format,
+                    kind: "singular placement",
+                });
             }
-            surface.transform_by(frame::matrix(transform));
-            Ok(surface)
+            // A placement maps the carrier's partials by the linear map, and
+            // monstertruck's `Processor::normal` divides its normal by the
+            // determinant. A NEGATIVE determinant therefore flips the
+            // transformed surface's natural normal relative to the oriented
+            // normal the source stated: `reversed` must absorb that sign, or a
+            // mirrored carrier is handed on facing inward.
+            let mut oriented = solved_surface(placed.basis(), context)?;
+            if determinant < 0.0 {
+                oriented.reversed = !oriented.reversed;
+            }
+            oriented.surface.transform_by(matrix);
+            Ok(oriented)
         }
 
-        // Refused by name, every one of them. A `Procedural` carrier names a
-        // construction this crate would have to replay; `Polygonal` is an
-        // approximation with a chordal bound, and admitting it as a spline patch
-        // would present a tessellation as exact geometry; `Unknown` is bytes the
-        // decoder itself could not classify.
-        SurfaceGeometry::Procedural { .. } => Err(unsupported("procedural", context)),
-        SurfaceGeometry::Polygonal { .. } => Err(unsupported("source-native polygonal", context)),
-        SurfaceGeometry::Unknown { .. } => Err(unsupported("unclassified native", context)),
-        // Matched EXHAUSTIVELY, with no catch-all. `SurfaceGeometry` is not
-        // `#[non_exhaustive]`, so a cadmpeg release that adds a carrier breaks
-        // this build -- which is what we want. A catch-all would turn that
-        // release into a silent runtime refusal for a surface someone then has to
-        // discover is unsupported, instead of a decision made when the dependency
-        // moves.
+        // Refused by name, every one of them. `Polygonal` is an approximation
+        // with a chordal bound, and admitting it as a spline patch would present
+        // a tessellation as exact geometry; `Unknown` is bytes the decoder itself
+        // could not classify.
+        SolvedSurfaceGeometry::Polygonal(_) => Err(unsupported("source-native polygonal", context)),
+        SolvedSurfaceGeometry::Unknown { .. } => Err(unsupported("unclassified native", context)),
+        // Matched EXHAUSTIVELY, with no catch-all. A cadmpeg release that adds a
+        // carrier breaks this build -- which is what we want. A catch-all would
+        // turn that release into a silent runtime refusal for a surface someone
+        // then has to discover is unsupported, instead of a decision made when
+        // the dependency moves.
     }
 }
 
-/// Revolve a profile line about a frame's axis.
-fn revolution(profile: Line<Point3>, frame: frame::Frame) -> Result<Surface> {
-    Ok(Surface::RevolutionSurface(Processor::new(
-        RevolutionSurface::by_revolution(Curve::Line(profile), frame.origin, frame.axis),
-    )))
-}
-
-/// A radius that can actually be built with.
-fn finite_radius(radius: f64, what: &str, context: &Context<'_>) -> Result<f64> {
-    if !radius.is_finite() || radius <= 0.0 {
-        return Err(context.malformed(format!("{what} has radius {radius}")));
-    }
-    Ok(radius)
+/// Revolve a profile line about a frame's axis, facing AWAY from the axis.
+///
+/// A line revolved about an axis it runs alongside has its natural normal
+/// pointing TOWARD the axis, which is the opposite of the representation's
+/// cylinder and cone charts (`Su x Sv` points away from the axis wherever the
+/// local radius is positive). So the revolution is inverted, exactly as
+/// monstertruck's own STEP reader does for `CYLINDRICAL_SURFACE` and
+/// `CONICAL_SURFACE` (`step_types/surface.rs`), and the two readers hand the
+/// kernel the same surface. Until cadmpeg 0.6 this inversion was missing here,
+/// and every cylindrical and conical face this bridge produced faced inward;
+/// `cylinders_and_cones_face_like_the_source` pins it against cadmpeg's own
+/// evaluator.
+fn revolution(profile: Line<Point3>, frame: frame::Frame) -> Surface {
+    let mut surface = Processor::new(RevolutionSurface::by_revolution(
+        Curve::Line(profile),
+        frame.origin,
+        frame.axis,
+    ));
+    surface.invert();
+    Surface::RevolutionSurface(surface)
 }
 
 /// Ask the net builder whether this analytic carrier is admissible.
@@ -228,74 +337,117 @@ fn unsupported(kind: &'static str, context: &Context<'_>) -> crate::Error {
 /// [`Surface::NurbsSurface`] with every weight at one: the polynomial form has no
 /// weight division in its evaluation, and the boolean kernel's exact-patch
 /// machinery distinguishes the two.
-fn nurbs(surface: &IrNurbsSurface, context: &Context<'_>) -> Result<Surface> {
-    let (rows, columns) = (surface.u_count as usize, surface.v_count as usize);
-    if surface.u_periodic || surface.v_periodic {
-        // A periodic knot vector is not a clamped one, and wrapping it correctly
-        // means reconstructing control points the source did not send. Refused
-        // rather than built with a seam in the wrong place.
-        return Err(crate::Error::UnsupportedSurfaceKind {
-            format: context.format,
-            kind: "periodic NURBS",
-        });
+///
+/// # Periodic and unclamped knot vectors
+///
+/// The representation stores every net, periodic or not, as a FULL knot vector
+/// with every pole, and evaluates it over the effective domain
+/// `[knot[degree], knot[count]]` only (`eval::nurbs_pcurve_parameter_domain`).
+/// A periodic net additionally wraps its parameter modulo that domain's width.
+/// So both are exactly convertible: the spline over the effective domain is the
+/// whole carrier, and a periodic one is that same spline traversed once. The
+/// net is clamped onto the effective domain by knot insertion -- which leaves
+/// the spline unchanged -- so the result is an ordinary clamped net whose range
+/// is the source's domain. Nothing past the domain survives: a clamp at the
+/// FULL knot extent would keep the extrapolation spans, which are not the
+/// carrier.
+fn nurbs(surface: &IrNurbsSurface, context: &Context<'_>) -> Result<Oriented> {
+    if surface.cache_fit_tolerance().is_some() {
+        // The net is a FIT to some other carrier. Admitting it would present an
+        // approximation as the exact surface. This shares
+        // `UnsupportedSurfaceKind` with the construction-level fitted cache so
+        // that one condition does not change error class depending on where the
+        // tolerance was recorded.
+        return Err(unsupported("fitted NURBS surface", context));
     }
-    expect_length(
-        surface.control_points.len(),
-        rows * columns,
-        "NURBS surface control points",
-        context,
-    )?;
-    expect_length(
-        surface.u_knots.len(),
-        rows + surface.u_degree as usize + 1,
-        "NURBS surface u knots",
-        context,
-    )?;
-    expect_length(
-        surface.v_knots.len(),
-        columns + surface.v_degree as usize + 1,
-        "NURBS surface v knots",
-        context,
-    )?;
     let knots = (
-        KnotVector::from(surface.u_knots.clone()),
-        KnotVector::from(surface.v_knots.clone()),
+        KnotVector::from(surface.u_knots().to_vec()),
+        KnotVector::from(surface.v_knots().to_vec()),
     );
-    // Control points arrive u-major: index `i * v_count + j` is pole (i, j),
-    // which is the row-of-v layout `BsplineSurface` wants.
-    let rows_of = |row: usize| &surface.control_points[row * columns..(row + 1) * columns];
-    match &surface.weights {
+    let degrees = (surface.u_degree() as usize, surface.v_degree() as usize);
+    // Rows are u, columns are v -- `control_grid()`'s outer index is u -- which
+    // is the row-of-v layout `BsplineSurface` wants.
+    let grid = surface.control_grid();
+    let converted = match surface.weights() {
         None => {
-            let net = (0..rows)
-                .map(|row| rows_of(row).iter().map(frame::point).collect())
+            let net = grid
+                .iter()
+                .map(|row| row.iter().map(|pole| frame::finite_point(*pole)).collect())
                 .collect();
-            Ok(Surface::BsplineSurface(built(
-                BsplineSurface::try_new(knots, net),
-                context,
-            )?))
+            let net = built(BsplineSurface::try_new(knots, net), context)?;
+            Surface::BsplineSurface(clamped_onto_domain(net, degrees, context)?)
         }
         Some(weights) => {
-            expect_length(
-                weights.len(),
-                rows * columns,
-                "NURBS surface weights",
-                context,
-            )?;
-            let net = (0..rows)
-                .map(|row| {
-                    rows_of(row)
-                        .iter()
-                        .zip(&weights[row * columns..(row + 1) * columns])
-                        .map(|(point, weight)| homogeneous(point, *weight))
+            let net = grid
+                .iter()
+                .zip(&weights)
+                .map(|(row, weights)| {
+                    row.iter()
+                        .zip(weights)
+                        .map(|(pole, weight)| homogeneous(&pole.get(), weight.get()))
                         .collect()
                 })
                 .collect();
-            Ok(Surface::NurbsSurface(NurbsSurface::new(built(
-                BsplineSurface::try_new(knots, net),
-                context,
-            )?)))
+            let net = built(BsplineSurface::try_new(knots, net), context)?;
+            Surface::NurbsSurface(NurbsSurface::new(clamped_onto_domain(
+                net, degrees, context,
+            )?))
         }
+    };
+    Ok(Oriented {
+        surface: converted,
+        // `Pu x Pv` with u the row index is monstertruck's natural normal too, so
+        // the source's own flag is the whole answer.
+        reversed: surface.normal_reversed(),
+    })
+}
+
+/// Clamp a net onto its effective domain `[knot[degree], knot[count]]` in both
+/// directions, leaving the spline unchanged. A net already clamped is returned
+/// as it was, so every clamped source converts exactly as before.
+fn clamped_onto_domain<P: ControlPoint<f64> + Tolerance>(
+    mut net: BsplineSurface<P>,
+    (u_degree, v_degree): (usize, usize),
+    context: &Context<'_>,
+) -> Result<BsplineSurface<P>> {
+    let domain = |knots: &KnotVector, count: usize, degree: usize| {
+        (knots[degree], knots[count], {
+            let front = knots[..=degree].iter().all(|knot| *knot == knots[degree]);
+            let back = knots[count..].iter().all(|knot| *knot == knots[count]);
+            (front, back)
+        })
+    };
+    let (u_low, u_high, (u_front, u_back)) =
+        domain(net.knot_vector_u(), net.control_points().len(), u_degree);
+    if !u_back {
+        let _beyond = net.cut_u(u_high);
     }
+    if !u_front {
+        net = net.cut_u(u_low);
+    }
+    let (v_low, v_high, (v_front, v_back)) =
+        domain(net.knot_vector_v(), net.control_points()[0].len(), v_degree);
+    if !v_back {
+        let _beyond = net.cut_v(v_high);
+    }
+    if !v_front {
+        net = net.cut_v(v_low);
+    }
+    // Read back what the cuts produced rather than trusting them: `cut_u`
+    // snaps a parameter near a domain end onto it, and a net whose range moved
+    // is not the carrier.
+    let (u_now, v_now) = (
+        domain(net.knot_vector_u(), net.control_points().len(), u_degree),
+        domain(net.knot_vector_v(), net.control_points()[0].len(), v_degree),
+    );
+    let range_holds = (u_now.0, u_now.1, v_now.0, v_now.1) == (u_low, u_high, v_low, v_high);
+    if !net.is_clamped() || !range_holds {
+        return Err(context.malformed(format!(
+            "a NURBS surface's knot vectors could not be clamped onto their effective domain \
+             [{u_low}, {u_high}] x [{v_low}, {v_high}]"
+        )));
+    }
+    Ok(net)
 }
 
 /// A rational control point in homogeneous coordinates.
@@ -303,27 +455,11 @@ pub(super) fn homogeneous(point: &cadmpeg_ir::math::Point3, weight: f64) -> Vect
     Vector4::new(point.x * weight, point.y * weight, point.z * weight, weight)
 }
 
-/// Report a count mismatch as malformed geometry rather than panicking in the
-/// slice arithmetic below it.
-pub(super) fn expect_length(
-    actual: usize,
-    expected: usize,
-    what: &str,
-    context: &Context<'_>,
-) -> Result<()> {
-    if actual != expected {
-        return Err(context.malformed(format!(
-            "{what}: expected {expected} values, the file carried {actual}"
-        )));
-    }
-    Ok(())
-}
-
 /// Turn a geometry-crate construction failure into a typed import failure.
 ///
 /// `BsplineSurface::new` panics where `try_new` reports; on file input the
 /// reporting one is the only defensible choice.
-fn built<T>(
+pub(super) fn built<T>(
     result: std::result::Result<T, monstertruck_geometry::errors::Error>,
     context: &Context<'_>,
 ) -> Result<T> {
