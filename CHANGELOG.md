@@ -12,6 +12,21 @@ the two do not line up -- upstream `truck v0.4` has nothing to do with
 monstertruck 0.4.0.
 
 
+## Unreleased
+
+### Added
+
+- **`monstertruck-healing`: conservative naked-edge welding.**
+  `snap_naked_edges` welds singly used edge pairs from distinct faces whose end
+  vertices correspond and whose curves are proven to stay within the tolerance.
+  A pair becomes one shared edge and its matching vertices merge; face order,
+  surfaces and orientation flags are untouched, unmatched edges stay naked, and
+  every pair left naked is reported with its reason (`SnapReport`,
+  `SkipReason`). The pass is transactional, deterministic, an exact no-op at
+  tolerance zero, and never moves anything farther than the tolerance. Curve
+  agreement is a certified bound from each curve's exact homogeneous B-spline
+  form, not a sample.
+
 ## 0.4.1 -- 2026-09-19
 
 ### Added
