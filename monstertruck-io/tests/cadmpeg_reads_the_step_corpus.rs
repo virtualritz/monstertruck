@@ -58,11 +58,17 @@ const DECODES: [(&str, usize, usize, usize, usize); 10] = [
     ("occt-torus.step", 1, 1, 0, 1),
 ];
 
+/// One refusal word and the number of instances it stands for.
+type RefusalCensus = [(&'static str, usize)];
+
+/// `(fixture, converted bodies, refusal census)`.
+type ConversionOutcome = (&'static str, usize, &'static RefusalCensus);
+
 /// Every fixture's CONVERSION outcome: `(converted bodies, sorted refusal words
 /// with instance counts)`. Measured on this branch; a converter that refused
 /// every `abc` body, or silently converted fewer, now fails here rather than
 /// passing because it merely attempted the conversion.
-const CONVERTS: [(&str, usize, &[(&str, usize)]); 10] = [
+const CONVERTS: [ConversionOutcome; 10] = [
     (
         "abc-0000.step",
         1,

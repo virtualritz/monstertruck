@@ -2,7 +2,9 @@ use crate::*;
 
 impl<T: Copy> Attributes<usize> for Vec<T> {
     type Output = T;
-    fn get(&self, idx: usize) -> Option<T> { self.as_slice().get(idx).copied() }
+    // `self.get(idx)` would resolve to this trait method and recurse; name the
+    // slice method explicitly.
+    fn get(&self, idx: usize) -> Option<T> { <[T]>::get(self, idx).copied() }
 }
 
 impl Attributes<StandardVertex> for StandardAttributes {
