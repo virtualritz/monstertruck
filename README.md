@@ -129,6 +129,13 @@ cargo add monstertruck
 cargo add monstertruck-modeling monstertruck-solid monstertruck-meshing
 ```
 
+The facade defaults to the `modeling` and `meshing` features. Enable `solid`
+and `step` explicitly for boolean operations and STEP I/O:
+
+```toml
+monstertruck = { version = "0.4", features = ["solid", "step"] }
+```
+
 ### Running the Examples
 
 All examples are located under the `examples` directory within each respective crate. They use standard Cargo syntax for execution.

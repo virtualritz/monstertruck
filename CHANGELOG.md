@@ -12,6 +12,15 @@ the two do not line up -- upstream `truck v0.4` has nothing to do with
 monstertruck 0.4.0.
 
 
+## Unreleased
+
+### Fixed
+
+- **docs: the facade README example states the features it needs.** The facade
+  defaults to `modeling` + `meshing`, which do not expose `solid` or `step`, so
+  a plain `cargo add monstertruck` made the example fail to compile. It now
+  shows `monstertruck = { version = "0.4", features = ["solid", "step"] }`.
+
 ## 0.4.2 -- 2026-11-13
 
 ### Added

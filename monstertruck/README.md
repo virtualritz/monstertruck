@@ -95,6 +95,14 @@ at the top.
 Build a cuboid and a cylinder, subtract the cylinder via boolean `AND`
 against its inverse, and emit the result as a STEP string.
 
+The example needs the `solid` and `step` features; both are outside the
+default `modeling` + `meshing` set:
+
+```toml
+[dependencies]
+monstertruck = { version = "0.4", features = ["solid", "step"] }
+```
+
 ```rust
 use monstertruck::modeling::*;
 use monstertruck::solid;
