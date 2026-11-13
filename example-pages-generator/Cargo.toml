@@ -2,5 +2,7 @@
 name = "example-pages-generator"
 version = "0.1.0"
 edition = "2024"
+# A local documentation tool, not one of the 18 released crates.
+publish = false
 
 [dependencies]
