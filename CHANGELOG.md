@@ -34,16 +34,25 @@ monstertruck 0.4.0.
   signed sphere and torus radii, `normal_reversed` nets, periodic and unclamped
   knot vectors, and exact procedural caches.
 
-  It also fixes two silent orientation defects: a face whose sense is reversed
-  now has its stored boundary reversed with it, so it no longer reaches the
-  kernel wound against its own normal; and a negative-determinant placement
-  flips every face flag, so mirrored bodies are no longer inside out. A singular
-  placement is refused by name instead of panicking downstream, and a closed
-  circular edge is converted as an exact four-arc rational NURBS.
-
   The end-to-end path from bytes is covered: every in-repo STEP fixture is
   decoded AND converted (with its refusal census pinned), and the IGES fixtures
   are read through `iges::from_path`.
+
+### Fixed
+
+- **`monstertruck-io`: two silent orientation defects.** A face whose sense is
+  reversed now has its stored boundary reversed with it, so it no longer reaches
+  the kernel wound against its own normal; a negative-determinant placement
+  flips every face flag, so mirrored bodies are no longer inside out.
+- **`monstertruck-io`: malformed placements, open edges and closed circles.**
+  A singular placement is refused by name instead of panicking downstream; an
+  open edge whose converted curve misses its vertices is refused rather than
+  handed out; and a closed circular edge converts as an exact four-arc rational
+  NURBS instead of being refused.
+- **build: current nightly again.** `rclite` is floored at 0.4.2, because 0.4.1
+  pulled `branches` 0.4.x, whose no-std path calls the removed
+  `core::intrinsics::abort`. The two new nightly clippy lints in this tree are
+  also cleared.
 
 ## 0.4.1 -- 2026-09-19
 
