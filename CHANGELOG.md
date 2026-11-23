@@ -12,7 +12,7 @@ the two do not line up -- upstream `truck v0.4` has nothing to do with
 monstertruck 0.4.0.
 
 
-## Unreleased
+## 0.4.3 -- 2026-11-23
 
 ### Fixed
 
