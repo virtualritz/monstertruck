@@ -75,6 +75,14 @@ impl<P: ControlPoint<f64> + Tolerance> BsplineSurface<P> {
                 return bspline;
             }
         };
+        let next = idx + 1;
+        let idx = match next < self.knot_vector_u().len()
+            && self.knot_vector_u()[next] < u_end
+            && u.near(&self.knot_vector_u()[next])
+        {
+            true => next,
+            false => idx,
+        };
         let s = if u.near(&self.knot_vector_u()[idx]) {
             u = self.knot_vector_u()[idx];
             self.knot_vector_u().multiplicity(idx)
