@@ -37,6 +37,9 @@ monstertruck-topology = { workspace = true }
 # its `wasm_js` FEATURE enabled. The workspace `getrandom` entry is 0.3's
 # successor 0.4, and enabling a feature there does not reach the 0.3 copy, so it
 # has to be named separately and renamed to avoid colliding with it.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rayon = { workspace = true }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom_wasm_js = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 

@@ -136,12 +136,8 @@ fn colliding_segment_pairs(sort_endpoints: Vec<EndPoint>) -> impl Iterator<Item 
 fn disjoint_bdbs(tri0: [Point3; 3], tri1: [Point3; 3]) -> bool {
     let bdb0: BoundingBox<Point3> = tri0.iter().collect();
     let bdb1: BoundingBox<Point3> = tri1.iter().collect();
-    bdb0.max()[0] < bdb1.min()[0]
-        || bdb1.max()[0] < bdb0.min()[0]
-        || bdb0.max()[1] < bdb1.min()[1]
-        || bdb1.max()[1] < bdb0.min()[1]
-        || bdb0.max()[2] < bdb1.min()[2]
-        || bdb1.max()[2] < bdb0.min()[2]
+    let gap = 1.0e-12 * f64::max(bdb0.diameter(), bdb1.diameter());
+    (0..3).any(|k| bdb0.max()[k] + gap < bdb1.min()[k] || bdb1.max()[k] + gap < bdb0.min()[k])
 }
 
 fn collide_seg_triangle(seg: [Point3; 2], tri: [Point3; 3]) -> Option<Point3> {
@@ -171,15 +167,49 @@ fn collide_seg_triangle(seg: [Point3; 2], tri: [Point3; 3]) -> Option<Point3> {
     }
 }
 
-fn collide_triangles(tri0: [Point3; 3], tri1: [Point3; 3]) -> Option<(Point3, Point3)> {
+fn cross_seg_triangle(seg: [Point3; 2], tri: [Point3; 3]) -> Option<Point3> {
+    let ab = tri[1] - tri[0];
+    let bc = tri[2] - tri[1];
+    let ca = tri[0] - tri[2];
+    let nor = ab.cross(ca);
+    if nor.so_small() {
+        return None;
+    }
+    let ap = seg[0] - tri[0];
+    let aq = seg[1] - tri[0];
+    let scale = nor.magnitude() * ap.magnitude().max(aq.magnitude()).max(f64::MIN_POSITIVE);
+    let side = |d: f64| d >= -1.0e-12 * scale;
+    let dotapnor = ap.dot(nor);
+    let dotaqnor = aq.dot(nor);
+    if side(dotapnor) == side(dotaqnor) {
+        return None;
+    }
+    let t = (dotapnor / (dotapnor - dotaqnor)).clamp(0.0, 1.0);
+    let h = seg[0] + t * (seg[1] - seg[0]);
+    if f64::signum(ab.cross(nor).dot(h - tri[0]) + TOLERANCE2)
+        + f64::signum(bc.cross(nor).dot(h - tri[1]) + TOLERANCE2)
+        + f64::signum(ca.cross(nor).dot(h - tri[2]) + TOLERANCE2)
+        >= 2.0
+    {
+        Some(h)
+    } else {
+        None
+    }
+}
+
+fn triangles_meet(
+    tri0: [Point3; 3],
+    tri1: [Point3; 3],
+    seg_hit: fn([Point3; 2], [Point3; 3]) -> Option<Point3>,
+) -> Option<(Point3, Point3)> {
     let mut tuple = (None, None);
     [
-        collide_seg_triangle([tri0[0], tri0[1]], tri1),
-        collide_seg_triangle([tri0[1], tri0[2]], tri1),
-        collide_seg_triangle([tri0[2], tri0[0]], tri1),
-        collide_seg_triangle([tri1[0], tri1[1]], tri0),
-        collide_seg_triangle([tri1[1], tri1[2]], tri0),
-        collide_seg_triangle([tri1[2], tri1[0]], tri0),
+        seg_hit([tri0[0], tri0[1]], tri1),
+        seg_hit([tri0[1], tri0[2]], tri1),
+        seg_hit([tri0[2], tri0[0]], tri1),
+        seg_hit([tri1[0], tri1[1]], tri0),
+        seg_hit([tri1[1], tri1[2]], tri0),
+        seg_hit([tri1[2], tri1[0]], tri0),
     ]
     .into_iter()
     .for_each(|pt| match tuple {
@@ -204,6 +234,14 @@ fn collide_triangles(tri0: [Point3; 3], tri1: [Point3; 3]) -> Option<(Point3, Po
     }
 }
 
+fn collide_triangles(tri0: [Point3; 3], tri1: [Point3; 3]) -> Option<(Point3, Point3)> {
+    triangles_meet(tri0, tri1, collide_seg_triangle)
+}
+
+fn cross_triangles(tri0: [Point3; 3], tri1: [Point3; 3]) -> Option<(Point3, Point3)> {
+    triangles_meet(tri0, tri1, cross_seg_triangle)
+}
+
 fn make_pos_tri(poly: &PolygonMesh, face: [StandardVertex; 3]) -> [Point3; 3] {
     array![i => poly.positions()[face[i].pos]; 3]
 }
@@ -223,7 +261,7 @@ fn collision(poly0: &PolygonMesh, poly1: &PolygonMesh) -> Vec<(Point3, Point3)> 
             let tri1 = make_pos_tri(poly1, tris1[idx1]);
             match disjoint_bdbs(tri0, tri1) {
                 true => None,
-                false => collide_triangles(tri0, tri1),
+                false => cross_triangles(tri0, tri1),
             }
         })
         .collect()

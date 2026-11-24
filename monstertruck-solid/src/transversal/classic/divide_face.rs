@@ -49,6 +49,16 @@ where
     Some(PolylineCurve(vec))
 }
 
+fn beside(poly: &PolylineCurve<Point2>) -> Point2 {
+    poly.windows(2)
+        .map(|pair| (pair[0], pair[1] - pair[0]))
+        .max_by(|a, b| a.1.magnitude2().total_cmp(&b.1.magnitude2()))
+        .map_or_else(
+            || poly.front(),
+            |(start, along)| start + along * 0.5 + Vector2::new(-along.y, along.x) * 1.0e-3,
+        )
+}
+
 #[derive(Clone, Debug)]
 struct WireChunk<'a, C> {
     poly: PolylineCurve<Point2>,
@@ -63,14 +73,22 @@ fn divide_one_face<C, S>(
 ) -> Option<Vec<FaceWithShapesOpStatus<C, S>>>
 where
     C: BoundedCurve<Point = Point3> + ParameterDivision1D<Point = Point3>,
-    S: Clone + SearchParameter<SurfaceParameter, Point = Point3>,
+    S: Clone + SearchParameter<SurfaceParameter, Point = Point3> + ParametricSurface3D,
 {
     let (mut pre_faces, mut negative_wires) = (Vec::new(), Vec::new());
     let mut map = HashMap::default();
+    let surface = face.surface();
+    let scale = |at: Point2| {
+        surface
+            .uder(at.x, at.y)
+            .cross(surface.vder(at.x, at.y))
+            .magnitude()
+    };
+    let negligible = |area: f64, at: Point2| (area * scale(at)).abs() < tol * tol;
     loops.iter().try_for_each(|wire| {
         let poly = create_parameter_boundary(face, wire, &mut map, tol)?;
         let area = poly.area();
-        if area.abs() < tol {
+        if negligible(area, poly.front()) {
             return Some(());
         }
         match area > 0.0 {
@@ -80,18 +98,28 @@ where
         Some(())
     })?;
     negative_wires.into_iter().try_for_each(|chunk| {
-        let pt = chunk.poly.front();
-        let idx = pre_faces.iter().position(|face| face[0].poly.include(pt));
-        if let Some(i) = idx {
-            let outer_area = pre_faces[i][0].poly.area();
-            let chunk_area = chunk.poly.area();
+        let pt = beside(&chunk.poly);
+        let chunk_area = chunk.poly.area();
+        let containing: Vec<usize> = (0..pre_faces.len())
+            .filter(|&i| !pre_faces[i].is_empty() && pre_faces[i][0].poly.include(pt))
+            .collect();
+        let is_inverse = |i: usize| negligible(pre_faces[i][0].poly.area() + chunk_area, pt);
+        let parent = containing
+            .iter()
+            .copied()
+            .filter(|&i| !is_inverse(i))
+            .min_by(|&a, &b| {
+                pre_faces[a][0]
+                    .poly
+                    .area()
+                    .total_cmp(&pre_faces[b][0].poly.area())
+            });
+        match (parent, containing.first()) {
+            (Some(i), _) => pre_faces[i].push(chunk),
             // If the sum of areas is zero, the face is canceled.
             // This happens when an intersection loop exactly matches the face boundary.
-            if (outer_area + chunk_area).abs() < tol {
-                pre_faces[i].clear();
-            } else {
-                pre_faces[i].push(chunk);
-            }
+            (None, Some(&i)) => pre_faces[i].clear(),
+            (None, None) => {}
         }
         Some(())
     })?;
@@ -127,25 +155,38 @@ pub(super) fn divide_faces<C, S>(
     tol: f64,
 ) -> Option<FacesClassification<Point3, C, S>>
 where
-    C: BoundedCurve<Point = Point3> + ParameterDivision1D<Point = Point3>,
-    S: Clone + SearchParameter<SurfaceParameter, Point = Point3>,
+    C: BoundedCurve<Point = Point3> + ParameterDivision1D<Point = Point3> + Send + Sync,
+    S: Clone
+        + SearchParameter<SurfaceParameter, Point = Point3>
+        + ParametricSurface3D
+        + Send
+        + Sync,
 {
     let mut res = FacesClassification::<Point3, C, S>::default();
-    shell
-        .iter()
-        .zip(loops_store)
-        .try_for_each(|(face, loops)| {
-            if loops
-                .iter()
-                .all(|wire| wire.status() == ShapesOpStatus::Unknown)
-            {
-                res.push(face.clone(), ShapesOpStatus::Unknown);
-            } else {
-                let vec = divide_one_face(face, loops, tol)?;
-                vec.into_iter()
-                    .for_each(|(face, status)| res.push(face, status));
-            }
-            Some(())
-        })?;
+    let divide = |(face, loops): (&Face<Point3, C, S>, &Loops<Point3, C>)| -> Option<Vec<FaceWithShapesOpStatus<C, S>>> {
+        if loops
+            .iter()
+            .all(|wire| wire.status() == ShapesOpStatus::Unknown)
+        {
+            Some(vec![(face.clone(), ShapesOpStatus::Unknown)])
+        } else {
+            divide_one_face(face, loops, tol)
+        }
+    };
+    let pairs: Vec<_> = shell.iter().zip(loops_store.iter()).collect();
+    #[cfg(not(target_arch = "wasm32"))]
+    let divided: Vec<_> = {
+        use rayon::prelude::*;
+        pairs
+            .into_par_iter()
+            .map(divide)
+            .collect::<Option<Vec<_>>>()?
+    };
+    #[cfg(target_arch = "wasm32")]
+    let divided: Vec<_> = pairs.into_iter().map(divide).collect::<Option<Vec<_>>>()?;
+    divided
+        .into_iter()
+        .flatten()
+        .for_each(|(face, status)| res.push(face, status));
     Some(res)
 }

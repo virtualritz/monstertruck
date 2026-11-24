@@ -10,6 +10,7 @@ mod integrate;
 mod polyline_construction;
 pub use integrate::{
     PlaneCut, ShapeOpsCurve, ShapeOpsError, ShapeOpsSurface, ShellOrientationHints, and,
-    and_with_orientation_hints, clip_half_space_z, difference, or, plane_cut, symmetric_difference,
+    and_normalized, and_with_orientation_hints, clip_half_space_z, difference,
+    difference_normalized, or, or_normalized, plane_cut, symmetric_difference,
 };
 pub use monstertruck_traits::SnapCurveEndpoints;
