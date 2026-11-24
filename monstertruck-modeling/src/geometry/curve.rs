@@ -172,10 +172,13 @@ impl ParameterDivision1D for Curve {
         let result = match self {
             Curve::Line(curve) => curve.parameter_division(range, tol),
             Curve::BsplineCurve(curve) => linear_bspline_division(curve, range)
+                .map(|division| thin_division(division, tol))
                 .unwrap_or_else(|| curve.parameter_division(range, tol)),
             Curve::NurbsCurve(curve) => curve.parameter_division(range, tol),
             Curve::ParameterCurve(curve) => curve.parameter_division(range, tol),
-            Curve::IntersectionCurve(curve) => curve.leader().parameter_division(range, tol),
+            Curve::IntersectionCurve(curve) => {
+                thin_division(curve.leader().parameter_division(range, tol), tol)
+            }
         };
         if debug_profile {
             let kind = match self {
