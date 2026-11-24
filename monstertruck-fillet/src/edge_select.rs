@@ -426,6 +426,23 @@ pub fn fillet_edges(
         }
     }
 
+    {
+        let selected: HashSet<EdgeId> = edge_ids.iter().copied().collect();
+        let mut visited = HashSet::<EdgeId>::new();
+        let mut selected_per_vertex: HashMap<VertexId, usize> = HashMap::new();
+        shell
+            .edge_iter()
+            .filter(|edge| selected.contains(&edge.id()) && visited.insert(edge.id()))
+            .for_each(|edge| {
+                let (front, back) = edge.ends();
+                *selected_per_vertex.entry(front.id()).or_default() += 1;
+                *selected_per_vertex.entry(back.id()).or_default() += 1;
+            });
+        if selected_per_vertex.values().any(|&count| count >= 3) {
+            return Err(FilletError::VertexBlendUnsupported);
+        }
+    }
+
     // Validate per-edge radius count.
     if let RadiusSpec::PerEdge(ref radii) = options.radius
         && radii.len() != edge_ids.len()
@@ -722,7 +739,7 @@ where
 {
     let default_options = FilletOptions::default();
     let options = params.unwrap_or(&default_options);
-    let (mut internal_shell, internal_edge_ids) = convert_shell_in(shell, edges)?;
+    let (mut internal_shell, internal_edge_ids, originals) = convert_shell_in(shell, edges)?;
     let original_shell = internal_shell.clone();
     fillet_edges(&mut internal_shell, &internal_edge_ids, Some(options))?;
     if internal_shell.shell_condition() != ShellCondition::Closed
@@ -735,6 +752,6 @@ where
         }
         internal_shell = original_shell;
     }
-    *shell = convert_shell_out(&internal_shell)?;
+    *shell = convert_shell_out(&internal_shell, &originals)?;
     Ok(())
 }

@@ -1,6 +1,7 @@
 use monstertruck_core::tolerance::Tolerance;
 use monstertruck_geometry::prelude::*;
 use monstertruck_traits::{BoundedCurve, ParametricCurve, ParametricSurface};
+use std::cell::RefCell;
 
 use super::error::FilletError;
 use super::types::{self, Curve, ParameterCurveLinear};
@@ -103,25 +104,54 @@ impl TryFrom<Curve> for NurbsCurve<Vector4> {
     }
 }
 
+/// The curves and surfaces of a shell before conversion, each beside its NURBS form, so
+/// [`convert_shell_out`] can give back the original wherever the fillet left it untouched.
+pub(super) struct Originals<C, S> {
+    curves: Vec<(NurbsCurve<Vector4>, C)>,
+    surfaces: Vec<(NurbsSurface<Vector4>, S)>,
+}
+
+/// The internal shell, the internal ids of the selected edges, and the originals.
+pub(super) type ConvertedShell<C, S> = (InternalShell, Vec<types::EdgeId>, Originals<C, S>);
+
 /// Convert an external shell to internal fillet types.
 ///
-/// Returns the internal shell and the internal `EdgeId`s corresponding to
-/// the selected external edges (matched by endpoint positions).
+/// Returns the internal shell, the internal `EdgeId`s corresponding to
+/// the selected external edges (matched by endpoint positions), and the
+/// [`Originals`] to restore on the way out.
 pub(super) fn convert_shell_in<C: FilletableCurve, S: FilletableSurface>(
     shell: &monstertruck_topology::Shell<Point3, C, S>,
     edges: &[monstertruck_topology::Edge<Point3, C>],
-) -> std::result::Result<(InternalShell, Vec<types::EdgeId>), FilletError> {
+) -> std::result::Result<ConvertedShell<C, S>, FilletError> {
     // Collect endpoint pairs for requested edges (front, back).
     let edge_endpoints: Vec<(Point3, Point3)> = edges
         .iter()
         .map(|e| (e.absolute_front().point(), e.absolute_back().point()))
         .collect();
 
+    let originals = RefCell::new(Originals {
+        curves: Vec::new(),
+        surfaces: Vec::new(),
+    });
     let internal_shell: InternalShell = shell
         .try_mapped(
             |p| Some(*p),
-            |c| c.to_nurbs_curve().map(Curve::NurbsCurve),
-            |s| s.to_nurbs_surface(),
+            |c| {
+                let nurbs = c.to_nurbs_curve()?;
+                originals
+                    .borrow_mut()
+                    .curves
+                    .push((nurbs.clone(), c.clone()));
+                Some(Curve::NurbsCurve(nurbs))
+            },
+            |s| {
+                let nurbs = s.to_nurbs_surface()?;
+                originals
+                    .borrow_mut()
+                    .surfaces
+                    .push((nurbs.clone(), s.clone()));
+                Some(nurbs)
+            },
         )
         .ok_or(FilletError::UnsupportedGeometry {
             context: "failed to convert shell curves or surfaces to NURBS",
@@ -144,24 +174,39 @@ pub(super) fn convert_shell_in<C: FilletableCurve, S: FilletableSurface>(
         })
         .collect::<std::result::Result<Vec<_>, _>>()?;
 
-    Ok((internal_shell, internal_edge_ids))
+    Ok((internal_shell, internal_edge_ids, originals.into_inner()))
 }
 
 /// Convert an internal fillet shell back to external types.
 pub(super) fn convert_shell_out<C: FilletableCurve, S: FilletableSurface>(
     shell: &InternalShell,
+    originals: &Originals<C, S>,
 ) -> std::result::Result<monstertruck_topology::Shell<Point3, C, S>, FilletError> {
     shell
         .try_mapped(
             |p| Some(*p),
             |c| {
                 Some(match c {
-                    Curve::NurbsCurve(nc) => C::from(nc.clone()),
+                    Curve::NurbsCurve(nc) => originals
+                        .curves
+                        .iter()
+                        .find(|(nurbs, _)| nurbs == nc)
+                        .map(|(_, original)| original.clone())
+                        .unwrap_or_else(|| C::from(nc.clone())),
                     Curve::ParameterCurve(pc) => C::from(pc.clone()),
                     Curve::IntersectionCurve(ic) => C::from(ic.clone()),
                 })
             },
-            |s| Some(S::from(s.clone())),
+            |s| {
+                Some(
+                    originals
+                        .surfaces
+                        .iter()
+                        .find(|(nurbs, _)| nurbs == s)
+                        .map(|(_, original)| original.clone())
+                        .unwrap_or_else(|| S::from(s.clone())),
+                )
+            },
         )
         .ok_or(FilletError::UnsupportedGeometry {
             context: "failed to convert internal shell back to external types",

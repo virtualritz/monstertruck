@@ -45,7 +45,7 @@ anyhow = { workspace = true }
 proptest = { workspace = true }
 rand = { workspace = true }
 serde_json = { workspace = true }
-monstertruck-modeling = { workspace = true }
+monstertruck-modeling = { workspace = true, features = ["fillet"] }
 # Path-only ON PURPOSE: this crate publishes BEFORE monstertruck-io, so a
 # versioned dev-dependency could not resolve. cargo strips path-only
 # dev-dependencies at publish; local `cargo test` is unaffected.

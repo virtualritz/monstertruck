@@ -36,6 +36,9 @@ pub enum FilletError {
         /// Description of which conversion failed.
         context: &'static str,
     },
+    /// Three or more of the selected edges meet at one vertex, which needs a vertex blend.
+    #[error("Three or more filleted edges meet at a vertex; vertex blends are not supported.")]
+    VertexBlendUnsupported,
     /// The edge is too short for the requested fillet radius.
     #[error("Edge too short for fillet radius.")]
     DegenerateEdge,
